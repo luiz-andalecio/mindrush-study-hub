@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mindrush_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mindrush
+      POSTGRES_USER: ${DB_USER:-mindrush}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mindrush}
+    ports:
+      # Porta no host (DB_PORT) -> 5432 dentro do container (Postgres)
+      # Se a porta do host estiver em uso, mude DB_PORT no .env (ex: 5440)
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - mindrush_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-mindrush} -d mindrush"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: mindrush_pgadmin
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@mindrush.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+    ports:
+      - "${PGADMIN_PORT:-5051}:80"
+    volumes:
+      - mindrush_pgadmin_data:/var/lib/pgadmin
+
+volumes:
+  mindrush_postgres_data:
+  mindrush_pgadmin_data:
