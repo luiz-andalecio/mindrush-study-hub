@@ -30,6 +30,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           {/* Auth routes (no sidebar) */}
+          <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Register />} />
           <Route path="/esqueci-senha" element={<ForgotPassword />} />
