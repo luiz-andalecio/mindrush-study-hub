@@ -1,14 +1,43 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Zap, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { authService } from '@/services/authService';
 
 export default function Login() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleLogin = async () => {
+    setError(null);
+
+    // Validação básica no frontend (didática)
+    if (!email.trim() || !password) {
+      setError('Informe e-mail e senha.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await authService.login({ email, password });
+
+      // Guardamos o token para o interceptor do Axios enviar em cada request
+      localStorage.setItem('mindrush_token', response.data.token);
+
+      navigate('/dashboard');
+    } catch (err: any) {
+      const message = err?.response?.data?.message || 'Falha ao entrar. Verifique seus dados.';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
@@ -30,6 +59,12 @@ export default function Login() {
 
         {/* Form */}
         <div className="rounded-2xl p-6 gradient-card border border-border/50 shadow-card space-y-5">
+          {error && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-sm font-medium">E-mail</label>
             <div className="relative">
@@ -73,8 +108,8 @@ export default function Login() {
             <Link to="/esqueci-senha" className="text-sm text-primary hover:underline">Esqueci a senha</Link>
           </div>
 
-          <Button className="w-full gradient-primary text-primary-foreground font-semibold h-11 shadow-glow">
-            Entrar
+          <Button onClick={handleLogin} className="w-full gradient-primary text-primary-foreground font-semibold h-11 shadow-glow">
+            {loading ? 'Entrando...' : 'Entrar'}
           </Button>
 
           <div className="relative">
