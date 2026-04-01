@@ -1,10 +1,19 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Zap, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { authService } from '@/services/authService';
+
+function getApiErrorMessage(data: unknown): string | null {
+  if (!data || typeof data !== 'object') return null;
+  if (!('message' in data)) return null;
+
+  const message = (data as { message?: unknown }).message;
+  return typeof message === 'string' && message.trim() ? message : null;
+}
 
 export default function Login() {
   const navigate = useNavigate();
@@ -31,9 +40,14 @@ export default function Login() {
       localStorage.setItem('mindrush_token', response.data.token);
 
       navigate('/dashboard');
-    } catch (err: any) {
-      const message = err?.response?.data?.message || 'Falha ao entrar. Verifique seus dados.';
-      setError(message);
+    } catch (err: unknown) {
+      const fallback = 'Falha ao entrar. Verifique seus dados.';
+      if (axios.isAxiosError(err)) {
+        const messageFromApi = getApiErrorMessage(err.response?.data);
+        setError(messageFromApi ?? err.message ?? fallback);
+        return;
+      }
+      setError(fallback);
     } finally {
       setLoading(false);
     }
