@@ -6,9 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 
 export default function Login() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  const handleLogin = () => {
+    navigate('/dashboard');
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
