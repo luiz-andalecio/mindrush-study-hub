@@ -17,6 +17,7 @@ import Ranking from "./pages/Ranking";
 import Profile from "./pages/Profile";
 import Statistics from "./pages/Statistics";
 import Store from "./pages/Store";
+import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,13 +30,14 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           {/* Auth routes (no sidebar) */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Register />} />
           <Route path="/esqueci-senha" element={<ForgotPassword />} />
 
           {/* App routes (with sidebar layout) */}
           <Route element={<MainLayout />}>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/questoes" element={<Questions />} />
             <Route path="/simulados" element={<Simulados />} />
             <Route path="/redacao" element={<Essay />} />
