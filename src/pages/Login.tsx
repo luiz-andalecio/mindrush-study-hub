@@ -78,7 +78,7 @@ export default function Login() {
             <Link to="/esqueci-senha" className="text-sm text-primary hover:underline">Esqueci a senha</Link>
           </div>
 
-          <Button className="w-full gradient-primary text-primary-foreground font-semibold h-11 shadow-glow">
+          <Button onClick={handleLogin} className="w-full gradient-primary text-primary-foreground font-semibold h-11 shadow-glow">
             Entrar
           </Button>
 
