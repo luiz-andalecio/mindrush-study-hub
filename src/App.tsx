@@ -37,7 +37,7 @@ const App = () => (
 
           {/* App routes (with sidebar layout) */}
           <Route element={<MainLayout />}>
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/questoes" element={<Questions />} />
             <Route path="/simulados" element={<Simulados />} />
             <Route path="/redacao" element={<Essay />} />
