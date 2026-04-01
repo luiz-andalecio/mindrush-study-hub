@@ -17,6 +17,7 @@ import Ranking from "./pages/Ranking";
 import Profile from "./pages/Profile";
 import Statistics from "./pages/Statistics";
 import Store from "./pages/Store";
+import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
