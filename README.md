@@ -1,11 +1,14 @@
 # MindRush
 
-Plataforma web inteligente e gamificada voltada para a preparação de estudantes para o ENEM.
 
-Este repositório é um **monorepo** com:
+Plataforma web inteligente e gamificada para preparação ao ENEM, com autenticação moderna (JWT + refresh token seguro), gamificação, ranking, simulados e IA.
 
-- `backend/`: API em **Node.js + Express + Prisma**, com **JWT** e **PostgreSQL**
-- `frontend/`: app web em **React + Vite**, consumindo a API via **proxy** (sem CORS em desenvolvimento)
+
+**Monorepo:**
+
+- `backend/`: API em **Node.js + Express + Prisma** (substitui o antigo backend Spring Boot)
+- `frontend/`: app web em **React + Vite** (com Tailwind + shadcn/ui)
+- `docker-compose.yml`: banco **PostgreSQL** e **pgAdmin**
 
 ---
 
@@ -92,48 +95,36 @@ Desenvolver uma plataforma web gamificada e inteligente para preparação ao ENE
 - Gerenciador de pacotes: npm
 - Containerização: Docker (PostgreSQL + pgAdmin)
 
-**Stack do repositório (atual)**
 
-Frontend:
+**Stack do repositório (atual):**
 
-- React + Vite + TypeScript
-- Tailwind + shadcn/ui
-- Axios (baseURL `/api`)
-
-Backend:
-
-- Node.js + Express
-- Prisma ORM
-- JWT
-
-Banco/Dev:
-
-- PostgreSQL via Docker Compose
-- pgAdmin via Docker Compose (acesso via navegador)
+- **Frontend:** React + Vite + TypeScript, Tailwind, shadcn/ui, Axios (baseURL `/api`)
+- **Backend:** Node.js + Express, Prisma ORM, JWT (access token em memória, refresh token seguro em cookie httpOnly, CSRF double submit)
+- **Banco:** PostgreSQL via Docker Compose
+- **Admin:** pgAdmin via Docker Compose
 
 ---
 
 ## 📁 Estrutura do monorepo
 
+
 ```text
 .
-├── backend/            # Express + Prisma API
-├── frontend/           # React (Vite)
+├── backend/            # Express + Prisma API (JWT + refresh seguro)
+├── frontend/           # React (Vite, Tailwind, shadcn/ui)
 ├── docker-compose.yml  # Postgres + pgAdmin
 ├── .env.example        # variáveis de ambiente (exemplo)
 ├── .env                # variáveis locais (ignorado no Git)
-└── start.sh            # roda backend+frontend juntos
 ```
 
 ---
 
 ## 🚀 Começando (do zero)
 
+
 ### 1) Pré-requisitos
 
 - Node.js 20+ e npm
-- Java 21
-- Maven 3.9+
 - Docker + Docker Compose
 
 Verifique no Linux:
@@ -147,6 +138,7 @@ docker -v
 docker compose version
 ```
 
+
 ### 2) Variáveis de ambiente
 
 Na raiz do projeto:
@@ -156,8 +148,7 @@ cp .env.example .env
 ```
 
 Notas:
-
-- O backend lê automaticamente o `.env` em desenvolvimento (via `spring.config.import`).
+- O backend Express lê automaticamente o `.env` da raiz ou de `backend/.env`.
 - Não commite o `.env`.
 
 ### 3) Subir Postgres + pgAdmin (Docker)
@@ -211,99 +202,102 @@ No pgAdmin: “Register > Server…” → aba **Connection**:
 - Username: valor de `DB_USER` (padrão: `mindrush`)
 - Password: valor de `DB_PASSWORD` (padrão: `mindrush`)
 
+
 ### 5) Rodar backend + frontend
 
-Terminal 1 (Banco):
+**Banco:**
 
 ```bash
 docker compose up -d
 ```
 
-Terminal 2 (Backend):
+**Backend:**
 
 ```bash
 cd backend
-mvn spring-boot:run
+npm install
+npm run prisma:generate
+npm run prisma:push
+npm run dev
+# Por padrão, sobe em http://localhost:8080/api
+# Se a porta 8080 estiver ocupada, rode com PORT=8081 npm run dev
 ```
 
-Terminal 3 (Frontend):
+**Frontend:**
 
 ```bash
 cd frontend
 npm install
+# Por padrão, proxy /api para http://localhost:8080
 npm run dev
+# Se backend estiver em outra porta, rode com VITE_BACKEND_PORT=8081 npm run dev
 ```
 
+**Acesse:**
+- Frontend: http://localhost:5173 (ou porta sugerida pelo Vite)
+- Backend: http://localhost:8080/api (ou 8081)
+
 ---
+
 
 ## 🔌 Integração Frontend ↔ Backend (sem CORS em dev)
 
 - O frontend chama a API em `/api/*`.
-- O Vite faz proxy de `/api` para o backend.
-- Se você mudar `SERVER_PORT` no `.env`, o `start.sh` exporta `VITE_BACKEND_PORT` e o proxy acompanha.
+- O Vite faz proxy de `/api` para o backend Express (porta definida por `VITE_BACKEND_PORT` ou `SERVER_PORT`).
+- Não precisa configurar CORS em dev.
 
 ---
 
-## 🔐 Endpoints (MVP atual)
 
+## 🔐 Autenticação moderna (JWT + refresh seguro + CSRF)
+
+- Access token (JWT) curto, guardado **apenas em memória** no frontend
+- Refresh token **httpOnly** em cookie assinado, rotação automática, persistência de sessão no banco
+- Proteção CSRF (double submit cookie): frontend lê cookie CSRF e envia no header `x-csrf-token` para `/auth/refresh` e `/auth/logout`
+- Logout revoga sessão e limpa cookies
+- Documentação detalhada: [docs/auth.md](docs/auth.md)
+
+**Endpoints principais:**
 - Health: `GET /api/health`
 - Cadastro: `POST /api/auth/register`
 - Login: `POST /api/auth/login`
+- Refresh: `POST /api/auth/refresh` (precisa CSRF)
+- Logout: `POST /api/auth/logout` (precisa CSRF)
 - Perfil: `GET /api/users/me` (precisa `Authorization: Bearer <token>`)
 
 ---
 
-## 🗄️ Banco e Migrations (Flyway)
 
-As migrations SQL ficam em:
+## 🗄️ Banco e Migrations
 
-- `backend/src/main/resources/db/migration/`
+- O backend Express usa **Prisma** para gerenciar o schema e sincronizar com o banco.
+- O backend antigo (Spring Boot) usava Flyway; a tabela `flyway_schema_history` é ignorada pelo Prisma.
+- Migrations Prisma ficam em `backend/prisma/migrations/`.
 
-### Criar uma nova migration
+**Comandos úteis:**
 
-1) Crie um arquivo seguindo o padrão:
-
-- `V2__descricao_curta.sql`
-- `V3__outra_mudanca.sql`
-
-2) Rode o backend (Flyway aplica na inicialização):
-
-```bash
-cd backend
-mvn spring-boot:run
-```
-
-### Verificar se aplicou
-
-- No pgAdmin: tabela `flyway_schema_history`
-- Ou via terminal:
-
-```bash
-docker exec -it mindrush_db psql -U mindrush -d mindrush
-```
-
-Dentro do `psql`:
-
-```sql
-\dt
-select * from flyway_schema_history order by installed_rank;
-```
-
-### Reset completo (dev)
-
-```bash
-docker compose down -v
-docker compose up -d
-```
+- Gerar client Prisma:
+        ```bash
+        cd backend
+        npm run prisma:generate
+        ```
+- Sincronizar schema com o banco:
+        ```bash
+        npm run prisma:push
+        ```
+- Abrir Prisma Studio (admin web):
+        ```bash
+        npm run prisma:studio
+        ```
 
 ---
 
+
 ## 🧯 Troubleshooting rápido
 
-**Porta 8080 ocupada (Spring não sobe)**
 
-- Erro: `java.net.BindException: Endereço já em uso`
-- Solução: no `.env`, mude `SERVER_PORT=8081` e rode de novo.
+**Porta 8080 ocupada (backend não sobe)**
+- Solução: rode com `PORT=8081 npm run dev` no backend e `VITE_BACKEND_PORT=8081 npm run dev` no frontend.
 
 **Porta do Postgres ocupada**
 
@@ -313,15 +307,19 @@ docker compose up -d
 
 - Solução: mude `PGADMIN_PORT` no `.env`.
 
-**pgAdmin abre no browser mas não conecta no banco**
 
+**pgAdmin abre no browser mas não conecta no banco**
 - Dentro do pgAdmin, use Host `postgres` e Port `5432` (não use `localhost`).
 
 ---
 
 ## 🗺️ Próximos passos (sugestão prática)
 
-> **Estado atual**: temos o molde do frontend (UI/rotas) e um backend com fluxo básico de usuário (cadastro/login + rota protegida).
+
+> **Estado atual:**
+> - Backend Express + Prisma com autenticação JWT + refresh seguro, rotação, CSRF, sessões persistidas, logout seguro
+> - Frontend React com AuthContext, token só em memória, refresh automático, logout modal, integração completa
+> - Documentação do fluxo de autenticação em [docs/auth.md](docs/auth.md)
 
 ### 1) Base do produto (MVP)
 
@@ -329,10 +327,11 @@ docker compose up -d
 - [ ] Fechar a **modelagem do banco** (entidades e relacionamentos) e desenhar um ERD
 - [ ] Padronizar contratos da API (nomenclatura, paginação, erros, validação) e tipos compartilhados no frontend
 
+
 ### 2) Autenticação e contas
 
-- [ ] Evoluir JWT para **access + refresh token**
-- [ ] Implementar **logout** (invalidação/rotação de refresh)
+- [x] Evoluir JWT para **access + refresh token seguro** (cookie httpOnly, rotação, CSRF)
+- [x] Implementar **logout** (invalidação/rotação de refresh, limpeza de cookies, revogação de sessão)
 - [ ] Adicionar **edição de perfil** (nome, foto/avatar, bio, privacidade)
 - [ ] Implementar **roles** (ex.: `USER`, `ADMIN`) e endpoints de administração mínimos
 - [ ] Adicionar proteções: rate limiting/cooldown em login e reset de senha
@@ -409,8 +408,10 @@ docker compose up -d
 - [ ] Logs de auditoria para ações sensíveis
 - [ ] Hardening geral: validações, CORS em produção, headers, sanitização de input
 
+
 ### 13) Qualidade, testes e CI/CD
 
+- [x] Smoke test manual do fluxo de autenticação (register, login, refresh, logout, CSRF)
 - [ ] Testes no backend (unit + integração para auth e questions)
 - [ ] Testes no frontend (Vitest) e E2E (Playwright) para fluxos críticos
 - [ ] Pipeline CI (lint + build + testes) e ambiente de staging
@@ -422,6 +423,7 @@ docker compose up -d
 - [ ] Revisar responsividade, acessibilidade e microcopy (mensagens/erros)
 
 -----
+
 
 ## 📓 Convenção de Commits
 
