@@ -60,12 +60,28 @@ if (!process.env.DATABASE_URL) {
 
 export const env = {
   port: Number(process.env.PORT ?? process.env.SERVER_PORT ?? 8080),
-  jwtSecret: requireString("JWT_SECRET"),
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "1d",
+  // Segredos separados (boas práticas). Mantém compatibilidade com JWT_SECRET.
+  accessTokenSecret: requireString("ACCESS_TOKEN_SECRET", process.env.JWT_SECRET),
+  refreshTokenSecret: requireString("REFRESH_TOKEN_SECRET", process.env.JWT_SECRET),
+  cookieSecret: requireString("COOKIE_SECRET", process.env.JWT_SECRET),
+
+  accessTokenTtl: process.env.ACCESS_TOKEN_TTL ?? "15m",
+  refreshTokenTtl: process.env.REFRESH_TOKEN_TTL ?? "7d",
+
+  refreshCookieName: process.env.REFRESH_COOKIE_NAME ?? "mindrush_rt",
+  csrfCookieName: process.env.CSRF_COOKIE_NAME ?? "mindrush_csrf",
+
   corsOrigins: csv(process.env.CORS_ORIGINS),
   databaseUrl: requireString("DATABASE_URL", buildDatabaseUrl()),
 } as const;
 
-if (env.jwtSecret.length < 32) {
-  throw new Error("JWT_SECRET precisa ter pelo menos 32 caracteres (HS256).\n");
+for (const [key, secret] of Object.entries({
+  ACCESS_TOKEN_SECRET: env.accessTokenSecret,
+  REFRESH_TOKEN_SECRET: env.refreshTokenSecret,
+  COOKIE_SECRET: env.cookieSecret,
+})) {
+  if (secret.length < 32) {
+    throw new Error(`${key} precisa ter pelo menos 32 caracteres (HS256).\n`);
+  }
 }
+

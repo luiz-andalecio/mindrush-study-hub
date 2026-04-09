@@ -5,7 +5,6 @@ export const authService = {
   login: (data: LoginRequest) => api.post<AuthResponse>('/auth/login', data),
   register: (data: RegisterRequest) => api.post<AuthResponse>('/auth/register', data),
   forgotPassword: (email: string) => api.post('/auth/forgot-password', { email }),
-  logout: () => { localStorage.removeItem('mindrush_token'); },
-  getToken: () => localStorage.getItem('mindrush_token'),
-  isAuthenticated: () => !!localStorage.getItem('mindrush_token'),
+  refresh: () => api.post<{ token: string }>('/auth/refresh'),
+  logout: () => api.post('/auth/logout'),
 };

@@ -19,6 +19,7 @@ import Statistics from "./pages/Statistics";
 import Store from "./pages/Store";
 import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
@@ -28,29 +29,31 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          {/* Auth routes (no sidebar) */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/registro" element={<Register />} />
-          <Route path="/esqueci-senha" element={<ForgotPassword />} />
+        <AuthProvider>
+          <Routes>
+            {/* Auth routes (no sidebar) */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/registro" element={<Register />} />
+            <Route path="/esqueci-senha" element={<ForgotPassword />} />
 
-          {/* App routes (with sidebar layout) */}
-          <Route element={<MainLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/questoes" element={<Questions />} />
-            <Route path="/simulados" element={<Simulados />} />
-            <Route path="/redacao" element={<Essay />} />
-            <Route path="/chatbot" element={<Chatbot />} />
-            <Route path="/pvp" element={<PvP />} />
-            <Route path="/ranking" element={<Ranking />} />
-            <Route path="/perfil" element={<Profile />} />
-            <Route path="/estatisticas" element={<Statistics />} />
-            <Route path="/loja" element={<Store />} />
-          </Route>
+            {/* App routes (with sidebar layout) */}
+            <Route element={<MainLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/questoes" element={<Questions />} />
+              <Route path="/simulados" element={<Simulados />} />
+              <Route path="/redacao" element={<Essay />} />
+              <Route path="/chatbot" element={<Chatbot />} />
+              <Route path="/pvp" element={<PvP />} />
+              <Route path="/ranking" element={<Ranking />} />
+              <Route path="/perfil" element={<Profile />} />
+              <Route path="/estatisticas" element={<Statistics />} />
+              <Route path="/loja" element={<Store />} />
+            </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

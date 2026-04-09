@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import cookieParser from "cookie-parser";
 import { env } from "./env";
 import { errorHandler } from "./middleware/errorHandler";
 import { notFound } from "./middleware/notFound";
@@ -18,9 +19,13 @@ import { usersRouter } from "./routes/users";
 export function createApp() {
   const app = express();
 
+  // Importante para cookies secure atrás de reverse proxy (prod)
+  app.set("trust proxy", 1);
+
   app.use(helmet());
   app.use(express.json({ limit: "1mb" }));
   app.use(morgan("dev"));
+  app.use(cookieParser(env.cookieSecret));
 
   // Em dev, o recomendado é usar o proxy do Vite.
   // Mesmo assim, deixamos CORS configurável para testes sem proxy.

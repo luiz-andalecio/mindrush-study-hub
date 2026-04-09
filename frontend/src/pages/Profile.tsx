@@ -1,7 +1,19 @@
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { XPBar } from '@/components/XPBar';
-import { Edit, Award, Star, Zap, Trophy, Target, Flame, BookOpen } from 'lucide-react';
+import { Edit, Award, Star, Zap, Trophy, Target, Flame, BookOpen, LogOut } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const badges = [
   { name: 'Primeiro Login', icon: Star, color: 'gradient-warm' },
@@ -22,23 +34,56 @@ const stats = [
 ];
 
 export default function Profile() {
+  const { user, logout } = useAuth();
+
+  const initials = (user?.name || user?.email || 'MR')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join('');
+
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-slide-up">
       {/* Profile Header */}
       <div className="rounded-2xl p-6 gradient-card border border-border/50 shadow-card">
         <div className="flex items-start gap-6">
           <Avatar className="w-20 h-20 border-4 border-primary/30">
-            <AvatarFallback className="gradient-primary text-2xl font-display font-bold text-primary-foreground">MR</AvatarFallback>
+            <AvatarFallback className="gradient-primary text-2xl font-display font-bold text-primary-foreground">
+              {initials || 'MR'}
+            </AvatarFallback>
           </Avatar>
           <div className="flex-1">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-xl font-display font-bold">Estudante MindRush</h1>
-                <p className="text-sm text-muted-foreground">estudante@mindrush.com</p>
+                <h1 className="text-xl font-display font-bold">{user?.name || 'Estudante MindRush'}</h1>
+                <p className="text-sm text-muted-foreground">{user?.email || '—'}</p>
               </div>
-              <Button variant="outline" size="sm" className="border-border/50">
-                <Edit className="w-3.5 h-3.5 mr-2" /> Editar perfil
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="border-border/50" disabled>
+                  <Edit className="w-3.5 h-3.5 mr-2" /> Editar perfil
+                </Button>
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="border-border/50">
+                      <LogOut className="w-3.5 h-3.5 mr-2" /> Sair
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Sair da conta?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Isso encerra sua sessão neste navegador.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={logout}>Sair</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
             <div className="mt-4">
               <XPBar current={2750} max={4000} level={12} />

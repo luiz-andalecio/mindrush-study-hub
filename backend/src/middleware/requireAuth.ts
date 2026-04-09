@@ -1,10 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
-import { env } from "../env";
-
-type JwtPayload = {
-  sub?: string;
-};
+import { verifyAccessToken } from "../security/tokens";
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const header = req.header("authorization") ?? "";
@@ -15,10 +10,8 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 
   try {
-    const decoded = jwt.verify(token, env.jwtSecret) as JwtPayload;
-    const email = decoded.sub;
-    if (!email) return res.status(401).json({ message: "Token inválido." });
-    req.user = { email };
+    const { userId, email } = verifyAccessToken(token);
+    req.user = { userId, email };
     return next();
   } catch {
     return res.status(401).json({ message: "Token inválido." });

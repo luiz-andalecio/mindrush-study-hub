@@ -15,14 +15,14 @@ const submitSchema = z.object({
 });
 
 essaysRouter.get("/", (req, res) => {
-  const email = req.user!.email;
-  const store = essaysByUser.get(email);
+  const userId = req.user!.userId;
+  const store = essaysByUser.get(userId);
   return res.json(store ? Array.from(store.values()) : []);
 });
 
 essaysRouter.post("/", (req, res, next) => {
   try {
-    const email = req.user!.email;
+    const userId = req.user!.userId;
     const body = submitSchema.parse(req.body);
 
     const essay = {
@@ -36,8 +36,8 @@ essaysRouter.post("/", (req, res, next) => {
       submittedAt: new Date().toISOString(),
     };
 
-    if (!essaysByUser.has(email)) essaysByUser.set(email, new Map());
-    essaysByUser.get(email)!.set(essay.id, essay);
+    if (!essaysByUser.has(userId)) essaysByUser.set(userId, new Map());
+    essaysByUser.get(userId)!.set(essay.id, essay);
 
     return res.status(201).json(essay);
   } catch (err) {
@@ -46,8 +46,8 @@ essaysRouter.post("/", (req, res, next) => {
 });
 
 essaysRouter.get("/:id", (req, res, next) => {
-  const email = req.user!.email;
-  const store = essaysByUser.get(email);
+  const userId = req.user!.userId;
+  const store = essaysByUser.get(userId);
   const essay = store?.get(req.params.id);
   if (!essay) return next(new ApiError(404, "Redação não encontrada."));
   return res.json(essay);

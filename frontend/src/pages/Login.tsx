@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Zap, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { authService } from '@/services/authService';
+import { useAuth } from '@/contexts/AuthContext';
 
 function getApiErrorMessage(data: unknown): string | null {
   if (!data || typeof data !== 'object') return null;
@@ -16,7 +16,7 @@ function getApiErrorMessage(data: unknown): string | null {
 }
 
 export default function Login() {
-  const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,12 +34,7 @@ export default function Login() {
 
     try {
       setLoading(true);
-      const response = await authService.login({ email, password });
-
-      // Guardamos o token para o interceptor do Axios enviar em cada request
-      localStorage.setItem('mindrush_token', response.data.token);
-
-      navigate('/dashboard');
+      await login(email, password);
     } catch (err: unknown) {
       const fallback = 'Falha ao entrar. Verifique seus dados.';
       if (axios.isAxiosError(err)) {

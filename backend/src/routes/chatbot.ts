@@ -18,13 +18,13 @@ const sendSchema = z.object({
 });
 
 chatbotRouter.get("/history", (req, res) => {
-  const email = req.user!.email;
-  return res.json(historyByUser.get(email) ?? []);
+  const userId = req.user!.userId;
+  return res.json(historyByUser.get(userId) ?? []);
 });
 
 chatbotRouter.post("/", (req, res, next) => {
   try {
-    const email = req.user!.email;
+    const userId = req.user!.userId;
     const body = sendSchema.parse(req.body);
 
     const now = new Date().toISOString();
@@ -42,9 +42,9 @@ chatbotRouter.post("/", (req, res, next) => {
       timestamp: new Date().toISOString(),
     };
 
-    const history = historyByUser.get(email) ?? [];
+    const history = historyByUser.get(userId) ?? [];
     history.push(userMsg, assistantMsg);
-    historyByUser.set(email, history);
+    historyByUser.set(userId, history);
 
     return res.status(201).json(assistantMsg);
   } catch (err) {

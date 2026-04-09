@@ -32,11 +32,11 @@ function toUserResponse(user: {
 
 usersRouter.get("/me", async (req, res, next) => {
   try {
-    const email = req.user?.email;
-    if (!email) throw new ApiError(401, "Token inválido.");
+    const userId = req.user?.userId;
+    if (!userId) throw new ApiError(401, "Token inválido.");
 
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { id: userId },
       select: {
         id: true,
         name: true,
@@ -63,13 +63,13 @@ const patchSchema = z
 
 usersRouter.put("/me", async (req, res, next) => {
   try {
-    const email = req.user?.email;
-    if (!email) throw new ApiError(401, "Token inválido.");
+    const userId = req.user?.userId;
+    if (!userId) throw new ApiError(401, "Token inválido.");
 
     const patch = patchSchema.parse(req.body);
 
     const user = await prisma.user.update({
-      where: { email },
+      where: { id: userId },
       data: {
         ...(patch.name ? { name: patch.name.trim() } : {}),
       },
@@ -100,11 +100,11 @@ usersRouter.put("/me", async (req, res, next) => {
 
 usersRouter.get("/me/dashboard", async (req, res, next) => {
   try {
-    const email = req.user?.email;
-    if (!email) throw new ApiError(401, "Token inválido.");
+    const userId = req.user?.userId;
+    if (!userId) throw new ApiError(401, "Token inválido.");
 
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { id: userId },
       select: {
         level: true,
         xp: true,
