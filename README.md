@@ -4,7 +4,7 @@ Plataforma web inteligente e gamificada voltada para a preparação de estudante
 
 Este repositório é um **monorepo** com:
 
-- `backend/`: API em **Java 21 + Spring Boot 3**, com **JWT**, **Flyway** e **PostgreSQL**
+- `backend/`: API em **Node.js + Express + Prisma**, com **JWT** e **PostgreSQL**
 - `frontend/`: app web em **React + Vite**, consumindo a API via **proxy** (sem CORS em desenvolvimento)
 
 ---
@@ -102,10 +102,9 @@ Frontend:
 
 Backend:
 
-- Java 21 + Spring Boot 3
-- Spring Security + JWT
-- Spring Data JPA
-- Flyway (migrations SQL versionadas)
+- Node.js + Express
+- Prisma ORM
+- JWT
 
 Banco/Dev:
 
@@ -118,7 +117,7 @@ Banco/Dev:
 
 ```text
 .
-├── backend/            # Spring Boot API
+├── backend/            # Express + Prisma API
 ├── frontend/           # React (Vite)
 ├── docker-compose.yml  # Postgres + pgAdmin
 ├── .env.example        # variáveis de ambiente (exemplo)
