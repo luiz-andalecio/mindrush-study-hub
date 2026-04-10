@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { env } from "../env";
+import { logger } from "../logger";
 
 // Double Submit Cookie:
 // - backend define um cookie NÃO httpOnly com um token aleatório (csrf cookie)
@@ -18,6 +19,15 @@ export function requireCsrf(req: Request, res: Response, next: NextFunction) {
   const csrfHeader = req.header("x-csrf-token");
 
   if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
+    logger.warn("CSRF rejeitado", {
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl,
+      hasCookie: Boolean(csrfCookie),
+      hasHeader: Boolean(csrfHeader),
+      matches: Boolean(csrfCookie && csrfHeader && csrfCookie === csrfHeader),
+      origin: req.header("origin") ?? null,
+    });
     return res.status(403).json({ message: "CSRF token ausente ou inválido." });
   }
 
@@ -25,6 +35,12 @@ export function requireCsrf(req: Request, res: Response, next: NextFunction) {
   // Em dev com proxy do Vite, as requisições são same-origin e o Origin pode vir vazio.
   const origin = req.header("origin");
   if (origin && !isOriginAllowed(origin)) {
+    logger.warn("CSRF origem rejeitada", {
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl,
+      origin,
+    });
     return res.status(403).json({ message: "Origem não permitida." });
   }
 

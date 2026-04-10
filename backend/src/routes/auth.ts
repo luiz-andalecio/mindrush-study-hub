@@ -62,13 +62,22 @@ function csrfCookieOptions() {
     httpOnly: false,
     secure: isProd,
     sameSite: "lax" as const,
-    path: "/api",
+    // Precisa ser legível pelo frontend (ex.: /dashboard) via document.cookie,
+    // para poder mandar o header x-csrf-token no refresh/logout.
+    path: "/",
   };
+}
+
+function legacyCsrfCookieOptions() {
+  // Versões anteriores usavam Path=/api; limpar evita ficar com dois cookies
+  // com o mesmo nome e valores diferentes (o que pode quebrar a validação).
+  return { ...csrfCookieOptions(), path: "/api" };
 }
 
 function clearAuthCookies(res: any) {
   res.clearCookie(env.refreshCookieName, { ...cookieOptions(), signed: true });
   res.clearCookie(env.csrfCookieName, { ...csrfCookieOptions() });
+  res.clearCookie(env.csrfCookieName, { ...legacyCsrfCookieOptions() });
 }
 
 function setRefreshCookie(res: any, refreshToken: string) {
@@ -76,6 +85,8 @@ function setRefreshCookie(res: any, refreshToken: string) {
 }
 
 function setCsrfCookie(res: any, csrfToken: string) {
+  // Garante remoção do cookie CSRF legado (Path=/api) para não haver conflito.
+  res.clearCookie(env.csrfCookieName, legacyCsrfCookieOptions());
   res.cookie(env.csrfCookieName, csrfToken, csrfCookieOptions());
 }
 

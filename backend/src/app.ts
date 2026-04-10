@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { env } from "./env";
 import { errorHandler } from "./middleware/errorHandler";
 import { notFound } from "./middleware/notFound";
+import { requestId } from "./middleware/requestId";
 import { requireAuth } from "./middleware/requireAuth";
 import { authRouter } from "./routes/auth";
 import { chatbotRouter } from "./routes/chatbot";
@@ -24,7 +25,9 @@ export function createApp() {
 
   app.use(helmet());
   app.use(express.json({ limit: "1mb" }));
-  app.use(morgan("dev"));
+  app.use(requestId);
+  morgan.token("id", (req: any) => req?.requestId ?? "-");
+  app.use(morgan(":id :method :url :status :res[content-length] - :response-time ms"));
   app.use(cookieParser(env.cookieSecret));
 
   // Em dev, o recomendado é usar o proxy do Vite.
