@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "@/services/authService";
@@ -10,6 +12,7 @@ type AuthContextValue = {
   loading: boolean;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  updateProfile: (patch: { name?: string }) => Promise<User>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<boolean>;
 };
@@ -24,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshSession = useCallback(async () => {
     try {
       const refreshed = await authService.refresh();
-      setAccessToken(refreshed.token);
+      setAccessToken(refreshed.data.token);
       const me = await userService.getProfile();
       setUser(me.data);
       return true;
@@ -77,6 +80,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [navigate],
   );
 
+  const updateProfile = useCallback(async (patch: { name?: string }) => {
+    const updated = await userService.updateProfile(patch);
+    setUser(updated.data);
+    return updated.data;
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await authService.logout();
@@ -88,8 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [navigate]);
 
   const value = useMemo(
-    () => ({ user, loading, login, register, logout, refreshSession }),
-    [user, loading, login, register, logout, refreshSession],
+    () => ({ user, loading, login, register, updateProfile, logout, refreshSession }),
+    [user, loading, login, register, updateProfile, logout, refreshSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

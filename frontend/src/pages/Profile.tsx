@@ -1,7 +1,14 @@
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { XPBar } from '@/components/XPBar';
-import { Edit, Award, Star, Zap, Trophy, Target, Flame, BookOpen, LogOut } from 'lucide-react';
+import { Edit, Award, Star, Zap, Trophy, Target, Flame, BookOpen, LogOut, Lock } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { toast } from '@/hooks/use-toast';
+import { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,14 +41,64 @@ const stats = [
 ];
 
 export default function Profile() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateProfile } = useAuth();
+  const [editOpen, setEditOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const initials = (user?.name || user?.email || 'MR')
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join('');
+  const initials = useMemo(
+    () =>
+      (user?.name || user?.email || 'MR')
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((p) => p[0]?.toUpperCase())
+        .join(''),
+    [user?.email, user?.name],
+  );
+
+  useEffect(() => {
+    if (!editOpen) return;
+    setName(user?.name ?? '');
+  }, [editOpen, user?.name]);
+
+  async function handleSaveProfile() {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      toast({
+        title: 'Nome inválido',
+        description: 'Informe um nome para salvar seu perfil.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await updateProfile({ name: trimmed });
+      toast({
+        title: 'Perfil atualizado',
+        description: 'Seu nome foi atualizado com sucesso.',
+      });
+      setEditOpen(false);
+    } catch (err: unknown) {
+      let description = 'Não foi possível atualizar seu perfil.';
+      if (axios.isAxiosError(err)) {
+        const data = err.response?.data;
+        if (data && typeof data === 'object' && 'message' in data) {
+          const msg = (data as { message?: unknown }).message;
+          if (typeof msg === 'string' && msg.trim()) description = msg;
+        }
+      }
+      toast({
+        title: 'Erro ao salvar',
+        description,
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-slide-up">
@@ -60,9 +117,67 @@ export default function Profile() {
                 <p className="text-sm text-muted-foreground">{user?.email || '—'}</p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="border-border/50" disabled>
-                  <Edit className="w-3.5 h-3.5 mr-2" /> Editar perfil
-                </Button>
+                <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="border-border/50">
+                      <Edit className="w-3.5 h-3.5 mr-2" /> Editar perfil
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle>Editar perfil</DialogTitle>
+                      <DialogDescription>
+                        Atualize seus dados.
+                      </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="profile-name">Nome</Label>
+                        <Input
+                          id="profile-name"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="Seu nome"
+                          className="bg-muted/50"
+                          maxLength={200}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="profile-email">E-mail</Label>
+                        <Input
+                          id="profile-email"
+                          value={user?.email ?? ''}
+                          readOnly
+                          disabled
+                          className="bg-muted/30"
+                        />
+                      </div>
+
+                      <Separator />
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-muted-foreground" />
+                          <p className="text-sm font-medium">Senha</p>
+                        </div>
+                        <Button variant="outline" className="border-border/50" disabled>
+                          Trocar senha (em breve)
+                        </Button>
+                      </div>
+                    </div>
+
+                    <DialogFooter>
+                      <Button variant="outline" className="border-border/50" onClick={() => setEditOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button onClick={handleSaveProfile} disabled={saving} className="gradient-primary text-primary-foreground">
+                        {saving ? 'Salvando...' : 'Salvar'}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
