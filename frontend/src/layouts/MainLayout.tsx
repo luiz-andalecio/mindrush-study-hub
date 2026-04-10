@@ -3,19 +3,18 @@ import { useEffect } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { Topbar } from '@/components/Topbar';
-import { authService } from '@/services/authService';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function MainLayout() {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    // Proteção simples de rotas:
-    // se não tiver token, manda para o login.
-    // (MVP: sem refresh token, sem roles, etc.)
-    if (!authService.isAuthenticated()) {
-      navigate('/login');
-    }
-  }, [navigate]);
+    if (loading) return;
+    if (!user) navigate('/login');
+  }, [loading, user, navigate]);
+
+  if (loading) return null;
 
   return (
     <SidebarProvider>

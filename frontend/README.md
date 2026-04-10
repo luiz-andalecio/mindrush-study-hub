@@ -1,6 +1,6 @@
 # MindRush Frontend (React)
 
-Este frontend foi gerado inicialmente via Lovable e está sendo adaptado para integrar com um backend Spring Boot.
+Este frontend foi gerado inicialmente via Lovable e está sendo adaptado para integrar com um backend Express + Prisma.
 
 ## Rodar em desenvolvimento
 

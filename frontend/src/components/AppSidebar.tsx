@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, FileQuestion, ClipboardList, PenTool,
   MessageCircle, Swords, Trophy, User, BarChart3,
-  ShoppingBag, Zap
+  ShoppingBag, Zap, LogOut
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
@@ -10,6 +10,18 @@ import {
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const mainItems = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
@@ -31,6 +43,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const location = useLocation();
+  const { logout } = useAuth();
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
@@ -77,6 +90,30 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              {/* Logout abaixo de Perfil */}
+              <SidebarMenuItem>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <SidebarMenuButton>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      {!collapsed && <span>Sair</span>}
+                    </SidebarMenuButton>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Sair da conta?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Você vai precisar entrar novamente para acessar o app.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={logout}>Sair</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

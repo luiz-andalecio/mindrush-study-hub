@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Zap, Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
+import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { authService } from '@/services/authService';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Register() {
-  const navigate = useNavigate();
+  const { register: registerUser } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -30,12 +31,15 @@ export default function Register() {
 
     try {
       setLoading(true);
-      const response = await authService.register({ name, email, password });
-      localStorage.setItem('mindrush_token', response.data.token);
-      navigate('/dashboard');
-    } catch (err: any) {
-      const message = err?.response?.data?.message || 'Falha ao criar conta. Tente novamente.';
-      setError(message);
+      await registerUser(name, email, password);
+    } catch (err: unknown) {
+      const fallback = 'Falha ao criar conta. Tente novamente.';
+      if (axios.isAxiosError(err)) {
+        const message = (err.response?.data as { message?: unknown } | undefined)?.message;
+        setError(typeof message === 'string' && message.trim() ? message : fallback);
+      } else {
+        setError(fallback);
+      }
     } finally {
       setLoading(false);
     }

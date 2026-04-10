@@ -3,10 +3,16 @@
 .env.*
 
 # Java / Maven
-backend/target/
-backend/.classpath
-backend/.project
-backend/.settings/
+backend-java/target/
+backend-java/.classpath
+backend-java/.project
+backend-java/.settings/
+
+# Node (backend)
+backend/node_modules/
+backend/dist/
+backend/.env
+backend/.env.*
 
 # Node / Vite
 frontend/node_modules/
