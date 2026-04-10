@@ -20,6 +20,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +35,7 @@ export default function Login() {
 
     try {
       setLoading(true);
-      await login(email, password);
+      await login(email, password, rememberMe);
     } catch (err: unknown) {
       const fallback = 'Falha ao entrar. Verifique seus dados.';
       if (axios.isAxiosError(err)) {
@@ -111,8 +112,12 @@ export default function Login() {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Checkbox id="remember" />
-              <label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">Lembrar de mim</label>
+                <Checkbox
+                  id="remember"
+                  checked={rememberMe}
+                  onCheckedChange={(v) => setRememberMe(v === true)}
+                />
+                <label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">Lembrar de mim</label>
             </div>
             <Link to="/esqueci-senha" className="text-sm text-primary hover:underline">Esqueci a senha</Link>
           </div>

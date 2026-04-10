@@ -7,6 +7,7 @@ import { env } from "../env";
 import { ApiError } from "../errors";
 import { requireCsrf } from "../middleware/requireCsrf";
 import { randomToken, sha256, signAccessToken, signRefreshToken, verifyRefreshToken } from "../security/tokens";
+import { ttlToMs } from "../security/duration";
 
 export const authRouter = Router();
 
@@ -14,11 +15,13 @@ const registerSchema = z.object({
   name: z.string().min(1).max(200),
   email: z.string().email().max(200),
   password: z.string().min(6).max(200),
+  rememberMe: z.boolean().optional(),
 });
 
 const loginSchema = z.object({
   email: z.string().email().max(200),
   password: z.string().min(1).max(200),
+  rememberMe: z.boolean().optional(),
 });
 
 function toUserResponse(user: {
@@ -46,7 +49,7 @@ function toUserResponse(user: {
   };
 }
 
-function cookieOptions() {
+function cookieBaseOptions() {
   const isProd = process.env.NODE_ENV === "production";
   return {
     httpOnly: true,
@@ -56,7 +59,16 @@ function cookieOptions() {
   };
 }
 
-function csrfCookieOptions() {
+function cookieOptionsForTtl(refreshTtl: string, rememberMe: boolean) {
+  if (!rememberMe) return cookieBaseOptions();
+  return {
+    ...cookieBaseOptions(),
+    // Cookie persistente ("lembrar de mim")
+    maxAge: ttlToMs(refreshTtl),
+  };
+}
+
+function csrfCookieBaseOptions() {
   const isProd = process.env.NODE_ENV === "production";
   return {
     httpOnly: false,
@@ -68,31 +80,45 @@ function csrfCookieOptions() {
   };
 }
 
+function csrfCookieOptionsForTtl(refreshTtl: string, rememberMe: boolean) {
+  if (!rememberMe) return csrfCookieBaseOptions();
+  return {
+    ...csrfCookieBaseOptions(),
+    // Mantém o CSRF cookie alinhado à sessão persistente.
+    maxAge: ttlToMs(refreshTtl),
+  };
+}
+
 function legacyCsrfCookieOptions() {
   // Versões anteriores usavam Path=/api; limpar evita ficar com dois cookies
   // com o mesmo nome e valores diferentes (o que pode quebrar a validação).
-  return { ...csrfCookieOptions(), path: "/api" };
+  return { ...csrfCookieBaseOptions(), path: "/api" };
 }
 
 function clearAuthCookies(res: any) {
-  res.clearCookie(env.refreshCookieName, { ...cookieOptions(), signed: true });
-  res.clearCookie(env.csrfCookieName, { ...csrfCookieOptions() });
+  res.clearCookie(env.refreshCookieName, { ...cookieBaseOptions(), signed: true });
+  res.clearCookie(env.csrfCookieName, { ...csrfCookieBaseOptions() });
   res.clearCookie(env.csrfCookieName, { ...legacyCsrfCookieOptions() });
 }
 
-function setRefreshCookie(res: any, refreshToken: string) {
-  res.cookie(env.refreshCookieName, refreshToken, { ...cookieOptions(), signed: true });
+function setRefreshCookie(res: any, refreshToken: string, refreshTtl: string, rememberMe: boolean) {
+  res.cookie(env.refreshCookieName, refreshToken, {
+    ...cookieOptionsForTtl(refreshTtl, rememberMe),
+    signed: true,
+  });
 }
 
-function setCsrfCookie(res: any, csrfToken: string) {
+function setCsrfCookie(res: any, csrfToken: string, refreshTtl: string, rememberMe: boolean) {
   // Garante remoção do cookie CSRF legado (Path=/api) para não haver conflito.
   res.clearCookie(env.csrfCookieName, legacyCsrfCookieOptions());
-  res.cookie(env.csrfCookieName, csrfToken, csrfCookieOptions());
+  res.cookie(env.csrfCookieName, csrfToken, csrfCookieOptionsForTtl(refreshTtl, rememberMe));
 }
 
 authRouter.post("/register", async (req, res, next) => {
   try {
     const body = registerSchema.parse(req.body);
+    const rememberMe = Boolean(body.rememberMe);
+    const refreshTtl = rememberMe ? env.refreshTokenTtlRemember : env.refreshTokenTtl;
     const email = body.email.trim().toLowerCase();
     const name = body.name.trim();
 
@@ -126,7 +152,7 @@ authRouter.post("/register", async (req, res, next) => {
     // Cria sessão + refresh em cookie (httpOnly) e retorna access token no body.
     // Access token fica em memória no frontend.
     const sessionId = randomUUID?.() ?? randomToken(16);
-    const refreshToken = signRefreshToken(user.id, sessionId);
+    const refreshToken = signRefreshToken(user.id, sessionId, { rememberMe, expiresIn: refreshTtl });
     const session = await prisma.session.create({
       data: {
         id: sessionId,
@@ -135,13 +161,13 @@ authRouter.post("/register", async (req, res, next) => {
         csrfToken: randomToken(32),
         userAgent: req.header("user-agent") ?? undefined,
         ip: req.ip,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        expiresAt: new Date(Date.now() + ttlToMs(refreshTtl)),
       },
       select: { csrfToken: true },
     });
 
-    setRefreshCookie(res, refreshToken);
-    setCsrfCookie(res, session.csrfToken);
+    setRefreshCookie(res, refreshToken, refreshTtl, rememberMe);
+    setCsrfCookie(res, session.csrfToken, refreshTtl, rememberMe);
 
     const token = signAccessToken({ sub: user.id, email: user.email });
     return res.json({ token, user: toUserResponse(user) });
@@ -153,6 +179,8 @@ authRouter.post("/register", async (req, res, next) => {
 authRouter.post("/login", async (req, res, next) => {
   try {
     const body = loginSchema.parse(req.body);
+    const rememberMe = Boolean(body.rememberMe);
+    const refreshTtl = rememberMe ? env.refreshTokenTtlRemember : env.refreshTokenTtl;
     const email = body.email.trim().toLowerCase();
 
     const user = await prisma.user.findUnique({
@@ -175,7 +203,7 @@ authRouter.post("/login", async (req, res, next) => {
     if (!ok) throw new ApiError(401, "E-mail ou senha inválidos.");
 
     const sessionId = randomUUID?.() ?? randomToken(16);
-    const refreshToken = signRefreshToken(user.id, sessionId);
+    const refreshToken = signRefreshToken(user.id, sessionId, { rememberMe, expiresIn: refreshTtl });
 
     const session = await prisma.session.create({
       data: {
@@ -185,13 +213,13 @@ authRouter.post("/login", async (req, res, next) => {
         csrfToken: randomToken(32),
         userAgent: req.header("user-agent") ?? undefined,
         ip: req.ip,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        expiresAt: new Date(Date.now() + ttlToMs(refreshTtl)),
       },
       select: { csrfToken: true },
     });
 
-    setRefreshCookie(res, refreshToken);
-    setCsrfCookie(res, session.csrfToken);
+    setRefreshCookie(res, refreshToken, refreshTtl, rememberMe);
+    setCsrfCookie(res, session.csrfToken, refreshTtl, rememberMe);
 
     const token = signAccessToken({ sub: user.id, email: user.email });
     const { passwordHash: _passwordHash, ...safeUser } = user;
@@ -206,7 +234,8 @@ authRouter.post("/refresh", requireCsrf, async (req, res, next) => {
     const rawRefresh = req.signedCookies?.[env.refreshCookieName] as string | undefined;
     if (!rawRefresh) throw new ApiError(401, "Refresh token ausente.");
 
-    const { userId, sessionId } = verifyRefreshToken(rawRefresh);
+    const { userId, sessionId, rememberMe } = verifyRefreshToken(rawRefresh);
+    const refreshTtl = rememberMe ? env.refreshTokenTtlRemember : env.refreshTokenTtl;
 
     const session = await prisma.session.findUnique({
       where: { id: sessionId },
@@ -233,7 +262,7 @@ authRouter.post("/refresh", requireCsrf, async (req, res, next) => {
 
     // Rotação: revoga a sessão antiga e cria outra.
     const newSessionId = randomUUID?.() ?? randomToken(16);
-    const newRefresh = signRefreshToken(userId, newSessionId);
+    const newRefresh = signRefreshToken(userId, newSessionId, { rememberMe, expiresIn: refreshTtl });
     const newCsrf = randomToken(32);
 
     await prisma.$transaction([
@@ -249,14 +278,14 @@ authRouter.post("/refresh", requireCsrf, async (req, res, next) => {
           csrfToken: newCsrf,
           userAgent: req.header("user-agent") ?? undefined,
           ip: req.ip,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          expiresAt: new Date(Date.now() + ttlToMs(refreshTtl)),
         },
       }),
     ]);
 
     // Set cookies novos
-    setRefreshCookie(res, newRefresh);
-    setCsrfCookie(res, newCsrf);
+    setRefreshCookie(res, newRefresh, refreshTtl, rememberMe);
+    setCsrfCookie(res, newCsrf, refreshTtl, rememberMe);
 
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
     if (!user) throw new ApiError(401, "Usuário não encontrado.");

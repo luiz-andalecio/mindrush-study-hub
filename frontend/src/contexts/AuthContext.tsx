@@ -8,7 +8,7 @@ import { clearAccessToken, setAccessToken } from "@/auth/tokenStore";
 type AuthContextValue = {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<boolean>;
@@ -56,8 +56,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [navigate]);
 
   const login = useCallback(
-    async (email: string, password: string) => {
-      const response = await authService.login({ email, password });
+    async (email: string, password: string, rememberMe?: boolean) => {
+      const response = await authService.login({ email, password, rememberMe: Boolean(rememberMe) });
       setAccessToken(response.data.token);
       const me = await userService.getProfile();
       setUser(me.data);

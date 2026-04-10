@@ -10,6 +10,7 @@ export type AccessTokenPayload = {
 export type RefreshTokenPayload = {
   sub: string; // userId
   typ: "refresh";
+  rm?: boolean; // remember me
 };
 
 export function sha256(input: string) {
@@ -40,14 +41,18 @@ export function verifyAccessToken(token: string) {
   return { userId, email };
 }
 
-export function signRefreshToken(userId: string, sessionId: string) {
+export function signRefreshToken(
+  userId: string,
+  sessionId: string,
+  options?: { rememberMe?: boolean; expiresIn?: string },
+) {
   return jwt.sign(
-    { typ: "refresh" },
+    { typ: "refresh", rm: options?.rememberMe ? true : undefined },
     env.refreshTokenSecret,
     {
       subject: userId,
       jwtid: sessionId,
-      expiresIn: env.refreshTokenTtl as unknown as jwt.SignOptions["expiresIn"],
+      expiresIn: (options?.expiresIn ?? env.refreshTokenTtl) as unknown as jwt.SignOptions["expiresIn"],
     },
   );
 }
@@ -57,8 +62,9 @@ export function verifyRefreshToken(token: string) {
   const userId = decoded.sub;
   const sessionId = decoded.jti;
   const typ = decoded.typ;
+  const rememberMe = decoded.rm === true;
   if (typ !== "refresh") throw new Error("invalid");
   if (!userId || typeof userId !== "string") throw new Error("invalid");
   if (!sessionId || typeof sessionId !== "string") throw new Error("invalid");
-  return { userId, sessionId };
+  return { userId, sessionId, rememberMe };
 }

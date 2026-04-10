@@ -18,6 +18,11 @@ Este projeto usa um fluxo moderno de autenticação com **Access Token (JWT) de 
   - cookie `mindrush_csrf` (token CSRF) **não-httpOnly**
 - O frontend guarda o `token` **somente em memória**.
 
+Opcional: **Lembrar de mim**
+- No login, quando `rememberMe=true`, o backend emite um refresh token com **TTL maior** e define o refresh cookie como **persistente** (com `maxAge`).
+- Quando `rememberMe=false` (padrão), o refresh cookie é um **session cookie** (expira ao fechar o navegador).
+- O TTL é configurável por env vars: `REFRESH_TOKEN_TTL` e `REFRESH_TOKEN_TTL_REMEMBER`.
+
 2) **Requests autenticadas**
 - O frontend envia `Authorization: Bearer <accessToken>`.
 

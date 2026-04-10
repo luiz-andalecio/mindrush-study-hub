@@ -67,6 +67,7 @@ export const env = {
 
   accessTokenTtl: process.env.ACCESS_TOKEN_TTL ?? "15m",
   refreshTokenTtl: process.env.REFRESH_TOKEN_TTL ?? "7d",
+  refreshTokenTtlRemember: process.env.REFRESH_TOKEN_TTL_REMEMBER ?? "30d",
 
   refreshCookieName: process.env.REFRESH_COOKIE_NAME ?? "mindrush_rt",
   csrfCookieName: process.env.CSRF_COOKIE_NAME ?? "mindrush_csrf",
