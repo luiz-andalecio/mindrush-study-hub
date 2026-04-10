@@ -4,24 +4,28 @@ import { ApiError } from "../errors";
 import { logger } from "../logger";
 
 export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction) {
+  const log = req.log ?? logger;
+
   if (err instanceof ZodError) {
-    logger.warn("Requisição inválida (Zod)", {
-      requestId: req.requestId,
-      method: req.method,
-      path: req.originalUrl,
-      issuesCount: err.issues.length,
-    });
+    log.warn(
+      {
+        requestId: req.requestId,
+        issuesCount: err.issues.length,
+      },
+      "Requisição inválida (Zod)",
+    );
     return res.status(400).json({ message: "Dados inválidos.", issues: err.issues });
   }
 
   if (err instanceof ApiError) {
-    logger.warn("Erro de aplicação", {
-      requestId: req.requestId,
-      method: req.method,
-      path: req.originalUrl,
-      status: err.status,
-      message: err.message,
-    });
+    log.warn(
+      {
+        requestId: req.requestId,
+        status: err.status,
+        message: err.message,
+      },
+      "Erro de aplicação",
+    );
     return res.status(err.status).json({ message: err.message });
   }
 
@@ -29,24 +33,26 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   if (typeof err === "object" && err && "code" in err) {
     const anyErr = err as { code?: string };
     if (anyErr.code === "P2002") {
-      logger.warn("Conflito (Prisma P2002)", {
-        requestId: req.requestId,
-        method: req.method,
-        path: req.originalUrl,
-      });
+      log.warn(
+        {
+          requestId: req.requestId,
+        },
+        "Conflito (Prisma P2002)",
+      );
       return res.status(409).json({ message: "Já existe um usuário cadastrado com esse e-mail." });
     }
   }
 
   const message = err instanceof Error ? err.message : String(err);
   const stack = err instanceof Error ? err.stack : undefined;
-  logger.error("Erro inesperado", {
-    requestId: req.requestId,
-    method: req.method,
-    path: req.originalUrl,
-    message,
-    stack,
-  });
+  log.error(
+    {
+      requestId: req.requestId,
+      message,
+      stack,
+    },
+    "Erro inesperado",
+  );
 
   // Evita vazar detalhes internos para o frontend.
   return res.status(500).json({ message: "Erro interno do servidor." });

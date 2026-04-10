@@ -1,36 +1,25 @@
-export type LogLevel = "info" | "warn" | "error";
+import pino from "pino";
 
-type LogMeta = Record<string, unknown>;
+const isProd = process.env.NODE_ENV === "production";
 
-type LogEntry = {
-  level: LogLevel;
-  msg: string;
-  time: string;
-} & LogMeta;
-
-function write(level: LogLevel, msg: string, meta: LogMeta = {}) {
-  const entry: LogEntry = {
-    level,
-    msg,
-    time: new Date().toISOString(),
-    ...meta,
-  };
-
-  const line = JSON.stringify(entry);
-
-  if (level === "error") return console.error(line);
-  if (level === "warn") return console.warn(line);
-  return console.log(line);
-}
-
-export const logger = {
-  info(msg: string, meta?: LogMeta) {
-    write("info", msg, meta);
-  },
-  warn(msg: string, meta?: LogMeta) {
-    write("warn", msg, meta);
-  },
-  error(msg: string, meta?: LogMeta) {
-    write("error", msg, meta);
-  },
-} as const;
+export const logger = pino({
+  name: "mindrush-api",
+  level: process.env.LOG_LEVEL ?? (isProd ? "info" : "debug"),
+  ...(isProd
+    ? {}
+    : {
+        transport: {
+          target: "pino-pretty",
+          options: {
+            colorize: true,
+            levelFirst: true,
+            translateTime: "SYS:standard",
+            // O pino-http já gera uma linha-resumo da request.
+            // Esconder req/res evita poluição e deixa warnings/erros mais legíveis.
+            ignore: "pid,hostname,name,req,res,responseTime",
+            messageFormat: "[{requestId}] {msg}",
+            singleLine: true,
+          },
+        },
+      }),
+});

@@ -19,15 +19,17 @@ export function requireCsrf(req: Request, res: Response, next: NextFunction) {
   const csrfHeader = req.header("x-csrf-token");
 
   if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
-    logger.warn("CSRF rejeitado", {
-      requestId: req.requestId,
-      method: req.method,
-      path: req.originalUrl,
-      hasCookie: Boolean(csrfCookie),
-      hasHeader: Boolean(csrfHeader),
-      matches: Boolean(csrfCookie && csrfHeader && csrfCookie === csrfHeader),
-      origin: req.header("origin") ?? null,
-    });
+    const log = req.log ?? logger;
+    log.warn(
+      {
+        requestId: req.requestId,
+        hasCookie: Boolean(csrfCookie),
+        hasHeader: Boolean(csrfHeader),
+        matches: Boolean(csrfCookie && csrfHeader && csrfCookie === csrfHeader),
+        origin: req.header("origin") ?? null,
+      },
+      "CSRF rejeitado",
+    );
     return res.status(403).json({ message: "CSRF token ausente ou inválido." });
   }
 
@@ -35,12 +37,14 @@ export function requireCsrf(req: Request, res: Response, next: NextFunction) {
   // Em dev com proxy do Vite, as requisições são same-origin e o Origin pode vir vazio.
   const origin = req.header("origin");
   if (origin && !isOriginAllowed(origin)) {
-    logger.warn("CSRF origem rejeitada", {
-      requestId: req.requestId,
-      method: req.method,
-      path: req.originalUrl,
-      origin,
-    });
+    const log = req.log ?? logger;
+    log.warn(
+      {
+        requestId: req.requestId,
+        origin,
+      },
+      "CSRF origem rejeitada",
+    );
     return res.status(403).json({ message: "Origem não permitida." });
   }
 
