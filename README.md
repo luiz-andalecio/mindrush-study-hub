@@ -256,6 +256,7 @@ npm run dev
 - Proteção CSRF (double submit cookie): frontend lê cookie CSRF e envia no header `x-csrf-token` para `/auth/refresh` e `/auth/logout`
 - Logout revoga sessão e limpa cookies
 - Documentação detalhada: [docs/auth.md](docs/auth.md)
+- Integração com API ENEM (enem.dev): [docs/enem.md](docs/enem.md)
 
 **Endpoints principais:**
 - Health: `GET /api/health`

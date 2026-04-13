@@ -24,6 +24,9 @@ Você pode:
 1) Usar o `.env` da raiz (recomendado para manter um lugar só), ou
 2) Criar `backend/.env` baseado em `backend/.env.example`.
 
+> Importante: comandos do Prisma (`prisma db push`, `prisma migrate`, `prisma studio`) precisam da variável `DATABASE_URL` definida no ambiente.
+> Quando você roda dentro da pasta `backend/`, o Prisma procura `backend/.env`.
+
 ## Instalar dependências
 
 ```bash

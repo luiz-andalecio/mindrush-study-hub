@@ -139,3 +139,56 @@ export interface RegisterRequest {
   email: string;
   password: string;
 }
+
+// ===== ENEM (integração enem.dev via backend) =====
+
+export type EnemDiscipline = {
+  label: string;
+  value: string;
+};
+
+export type EnemLanguage = {
+  label: string;
+  value: string;
+};
+
+export interface EnemExam {
+  year: number;
+  title: string;
+  disciplines: EnemDiscipline[];
+  languages: EnemLanguage[];
+}
+
+export type EnemAlternativeLetter = "A" | "B" | "C" | "D" | "E";
+
+export type EnemQuestionAlternative = {
+  letter: EnemAlternativeLetter;
+  text: string | null;
+  file: string | null;
+  isCorrect: boolean;
+};
+
+export interface EnemQuestion {
+  year: number;
+  index: number;
+  title: string;
+  discipline: string | null;
+  language: string | null;
+  context: string | null;
+  files: string[];
+  correctAlternative: EnemAlternativeLetter;
+  alternativesIntroduction: string | null;
+  alternatives: EnemQuestionAlternative[];
+}
+
+export interface EnemQuestionsMetadata {
+  limit: number;
+  offset: number;
+  total: number;
+  hasMore: boolean;
+}
+
+export interface EnemQuestionsPage {
+  metadata: EnemQuestionsMetadata;
+  questions: EnemQuestion[];
+}

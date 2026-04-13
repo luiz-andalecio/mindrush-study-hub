@@ -58,3 +58,39 @@ model flyway_schema_history {
   @@index([success], map: "flyway_schema_history_s_idx")
   @@ignore
 }
+
+// ENEM (enem.dev)
+// Usado para fallback quando a API externa estiver indisponível.
+model EnemExam {
+  year        Int      @id
+  title       String   @db.VarChar(200)
+  disciplines Json
+  languages   Json
+
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("enem_exams")
+}
+
+model EnemQuestion {
+  // ID estável: "{year}:{index}:{languageOrPt}" (ex.: 2020:42:ingles)
+  id                        String   @id @db.VarChar(64)
+  year                      Int
+  index                     Int
+  language                  String?  @db.VarChar(30)
+  discipline                String?  @db.VarChar(50)
+  title                     String   @db.VarChar(200)
+  context                   String?
+  files                     Json
+  correctAlternative         String   @map("correct_alternative") @db.VarChar(1)
+  alternativesIntroduction   String?  @map("alternatives_introduction")
+  alternatives              Json
+
+  createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([year, index])
+  @@index([year, language])
+  @@map("enem_questions")
+}
