@@ -51,6 +51,20 @@ npm run prisma:push
 npm run dev
 ```
 
+## ENEM: pré-carregar questões no banco (recomendado)
+
+Para a **Jornada de Questões**, o app assume que as questões do ENEM já estão **pré-carregadas** no Postgres.
+
+Rode uma vez (pode demorar alguns minutos):
+
+```bash
+npm run enem:sync
+```
+
+Observações:
+- O script busca todas as provas e páginas de questões na `ENEM_API_BASE_URL` e faz **upsert** no banco.
+- No runtime normal (endpoints `/api/enem/*`), o backend trata a enem.dev como **read-only**: usa cache em memória e, se a API externa falhar, faz **fallback** para o banco local.
+
 Health check:
 
 - `GET http://localhost:8080/api/health`

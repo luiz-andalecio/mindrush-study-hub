@@ -55,26 +55,6 @@ export const enemService = {
       const apiExams = await client.getJson<EnemApiExam[]>("/exams", undefined, log);
       const mapped = apiExams.map(mapExam);
 
-      // Persistência local (upsert por year).
-      await prisma.$transaction(
-        mapped.map((exam) =>
-          prisma.enemExam.upsert({
-            where: { year: exam.year },
-            update: {
-              title: exam.title,
-              disciplines: exam.disciplines,
-              languages: exam.languages,
-            },
-            create: {
-              year: exam.year,
-              title: exam.title,
-              disciplines: exam.disciplines,
-              languages: exam.languages,
-            },
-          }),
-        ),
-      );
-
       cache.set(key, mapped);
       return mapped;
     } catch (err) {
@@ -106,21 +86,6 @@ export const enemService = {
     try {
       const apiExam = await client.getJson<EnemApiExamDetail>(`/exams/${year}`, undefined, log);
       const mapped = mapExamDetail(apiExam);
-
-      await prisma.enemExam.upsert({
-        where: { year: mapped.year },
-        update: {
-          title: mapped.title,
-          disciplines: mapped.disciplines,
-          languages: mapped.languages,
-        },
-        create: {
-          year: mapped.year,
-          title: mapped.title,
-          disciplines: mapped.disciplines,
-          languages: mapped.languages,
-        },
-      });
 
       cache.set(key, mapped);
       return mapped;
@@ -161,41 +126,6 @@ export const enemService = {
       );
 
       const mapped = mapQuestionsPage(apiPage);
-
-      // Persistência das questões retornadas.
-      await prisma.$transaction(
-        mapped.questions.map((q) => {
-          const id = questionId(q.year, q.index, q.language ?? undefined);
-          return prisma.enemQuestion.upsert({
-            where: { id },
-            update: {
-              year: q.year,
-              index: q.index,
-              language: q.language,
-              discipline: q.discipline,
-              title: q.title,
-              context: q.context,
-              files: q.files,
-              correctAlternative: q.correctAlternative,
-              alternativesIntroduction: q.alternativesIntroduction,
-              alternatives: q.alternatives,
-            },
-            create: {
-              id,
-              year: q.year,
-              index: q.index,
-              language: q.language,
-              discipline: q.discipline,
-              title: q.title,
-              context: q.context,
-              files: q.files,
-              correctAlternative: q.correctAlternative,
-              alternativesIntroduction: q.alternativesIntroduction,
-              alternatives: q.alternatives,
-            },
-          });
-        }),
-      );
 
       cache.set(key, mapped);
       return mapped;
@@ -262,36 +192,6 @@ export const enemService = {
       );
 
       const mapped = mapQuestion(apiQuestion);
-
-      const id = questionId(mapped.year, mapped.index, mapped.language ?? undefined);
-      await prisma.enemQuestion.upsert({
-        where: { id },
-        update: {
-          year: mapped.year,
-          index: mapped.index,
-          language: mapped.language,
-          discipline: mapped.discipline,
-          title: mapped.title,
-          context: mapped.context,
-          files: mapped.files,
-          correctAlternative: mapped.correctAlternative,
-          alternativesIntroduction: mapped.alternativesIntroduction,
-          alternatives: mapped.alternatives,
-        },
-        create: {
-          id,
-          year: mapped.year,
-          index: mapped.index,
-          language: mapped.language,
-          discipline: mapped.discipline,
-          title: mapped.title,
-          context: mapped.context,
-          files: mapped.files,
-          correctAlternative: mapped.correctAlternative,
-          alternativesIntroduction: mapped.alternativesIntroduction,
-          alternatives: mapped.alternatives,
-        },
-      });
 
       cache.set(key, mapped);
       return mapped;

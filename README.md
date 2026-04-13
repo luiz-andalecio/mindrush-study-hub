@@ -132,8 +132,6 @@ Verifique no Linux:
 ```bash
 node -v
 npm -v
-java -version
-mvn -v
 docker -v
 docker compose version
 ```
@@ -256,7 +254,8 @@ npm run dev
 - Proteção CSRF (double submit cookie): frontend lê cookie CSRF e envia no header `x-csrf-token` para `/auth/refresh` e `/auth/logout`
 - Logout revoga sessão e limpa cookies
 - Documentação detalhada: [docs/auth.md](docs/auth.md)
-- Integração com API ENEM (enem.dev): [docs/enem.md](docs/enem.md)
+- Integração com API ENEM (enem.dev): [docs/enem-api.md](docs/enem-api.md)
+- Jornada de Questões (fluxo e endpoints): [docs/journey.md](docs/journey.md)
 
 **Endpoints principais:**
 - Health: `GET /api/health`

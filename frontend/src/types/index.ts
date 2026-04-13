@@ -192,3 +192,152 @@ export interface EnemQuestionsPage {
   metadata: EnemQuestionsMetadata;
   questions: EnemQuestion[];
 }
+
+// ===== Jornada (Duolingo-like) =====
+
+export type JourneyNodeStatus = 'LOCKED' | 'AVAILABLE' | 'COMPLETED';
+
+export type JourneyQuestionAlternativePublic = {
+  letter: EnemAlternativeLetter;
+  text: string | null;
+  file: string | null;
+};
+
+// Durante a execução, o backend NÃO devolve gabarito.
+export type JourneyQuestionPublic = {
+  year: number;
+  index: number;
+  title: string;
+  discipline: string | null;
+  language: string | null;
+  context: string | null;
+  files: unknown[];
+  alternativesIntroduction: string | null;
+  alternatives: JourneyQuestionAlternativePublic[];
+};
+
+// Em resultado/histórico, o backend devolve gabarito.
+export type JourneyQuestionWithAnswer = JourneyQuestionPublic & {
+  correctAlternative: EnemAlternativeLetter;
+};
+
+export interface JourneyNodeQuestion {
+  id: string;
+  order: number;
+  enemQuestionId: string;
+  // Durante tentativa: JourneyQuestionPublic.
+  // Em histórico/resultado: JourneyQuestionWithAnswer.
+  question?: JourneyQuestionPublic | JourneyQuestionWithAnswer;
+}
+
+export interface JourneyNode {
+  id: string;
+  order: number;
+  status: JourneyNodeStatus;
+  year: number;
+  discipline: string;
+  language?: string | null;
+  minCorrect: number;
+  totalQuestions: number;
+  xpPerCorrect: number;
+  coinsOnComplete: number;
+  questions?: JourneyNodeQuestion[];
+  lastAttempt?: {
+    completedAt?: string | null;
+    correctCount: number;
+    totalCount: number;
+    passed?: boolean | null;
+    xpEarned: number;
+    coinsEarned: number;
+  };
+}
+
+export interface Journey {
+  id: string;
+  area: string;
+  discipline: string;
+  language?: string | null;
+  year: number;
+  createdAt: string;
+  updatedAt: string;
+  progress: {
+    totalNodes: number;
+    completedNodes: number;
+    accuracy: number;
+    xpGained: number;
+  };
+  nodes: JourneyNode[];
+}
+
+export interface JourneySummary {
+  id: string;
+  area: string;
+  discipline: string;
+  language?: string | null;
+  year: number;
+  progress: {
+    totalNodes: number;
+    completedNodes: number;
+  };
+}
+
+export interface AnswerSaveResponse {
+  nodeId: string;
+  enemQuestionId: string;
+  selectedAlternative: string;
+  attempt: {
+    id: string;
+    answeredCount: number;
+    totalQuestions: number;
+    completedAt: string | null;
+  };
+}
+
+export interface JourneyNodeAttemptAnswer {
+  enemQuestionId: string;
+  selectedAlternative: string;
+  isCorrect?: boolean;
+}
+
+export interface JourneyNodeDetails {
+  node: JourneyNode;
+  attempt:
+    | {
+        id: string;
+        completedAt?: string | null;
+        passed?: boolean | null;
+        correctCount?: number;
+        totalCount?: number;
+        answers: JourneyNodeAttemptAnswer[];
+      }
+    | null;
+}
+
+export interface FinalizeNodeResponse {
+  nodeId: string;
+  attempt: {
+    id: string;
+    correctCount: number;
+    totalCount: number;
+    completedAt: string;
+    passed: boolean;
+  };
+  rewards: {
+    xpEarned: number;
+    coinsEarned: number;
+    streak: number;
+    unlockedNextNodeId?: string | null;
+  };
+  results: Array<{
+    enemQuestionId: string;
+    selectedAlternative: string;
+    correctAlternative: EnemAlternativeLetter;
+    isCorrect: boolean;
+    question: JourneyQuestionWithAnswer;
+  }>;
+}
+
+export interface RetryNodeResponse {
+  nodeId: string;
+  attemptId: string;
+}

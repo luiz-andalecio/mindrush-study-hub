@@ -16,11 +16,124 @@ model User {
   xp           Int
   coins        Int
   streak       Int
+  lastStreakAt DateTime? @map("last_streak_at") @db.Timestamptz(6)
   createdAt    DateTime @map("created_at") @db.Timestamptz(6)
 
   sessions Session[]
 
+  journeys Journey[]
+  journeyAttempts JourneyNodeAttempt[]
+
   @@map("users")
+}
+
+enum JourneyNodeStatus {
+  LOCKED
+  AVAILABLE
+  COMPLETED
+}
+
+// Jornada de Questões (estilo Duolingo)
+model Journey {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  area       String   @db.VarChar(60)
+  discipline String   @db.VarChar(60)
+  // Para Linguagens: idioma escolhido (ex.: "ingles" ou "espanhol").
+  // Para outras áreas: null.
+  language   String?  @db.VarChar(30)
+  year       Int
+
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodes      JourneyNode[]
+
+  @@index([userId])
+  @@map("journeys")
+}
+
+model JourneyNode {
+  id            String            @id @default(uuid()) @db.Uuid
+  journeyId     String            @map("journey_id") @db.Uuid
+  order         Int
+  status        JourneyNodeStatus @default(LOCKED)
+
+  // Regras do card
+  minCorrect       Int @default(3) @map("min_correct")
+  totalQuestions   Int @default(5) @map("total_questions")
+  xpPerCorrect     Int @default(10) @map("xp_per_correct")
+  coinsOnComplete  Int @default(20) @map("coins_on_complete")
+
+  // Contexto ENEM
+  year          Int
+  language      String?  @db.VarChar(30)
+  discipline    String   @db.VarChar(60)
+
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  journey       Journey  @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  questions     JourneyNodeQuestion[]
+  attempts      JourneyNodeAttempt[]
+
+  @@unique([journeyId, order])
+  @@index([journeyId])
+  @@map("journey_nodes")
+}
+
+model JourneyNodeQuestion {
+  id            String   @id @default(uuid()) @db.Uuid
+  nodeId        String   @map("node_id") @db.Uuid
+  order         Int
+  enemQuestionId String  @map("enem_question_id") @db.VarChar(64)
+
+  node          JourneyNode  @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  enemQuestion  EnemQuestion @relation(fields: [enemQuestionId], references: [id])
+
+  @@unique([nodeId, order])
+  @@index([enemQuestionId])
+  @@map("journey_node_questions")
+}
+
+model JourneyNodeAttempt {
+  id          String   @id @default(uuid()) @db.Uuid
+  nodeId      String   @map("node_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+
+  startedAt   DateTime @default(now()) @map("started_at") @db.Timestamptz(6)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
+
+  correctCount Int @default(0) @map("correct_count")
+  totalCount   Int @default(0) @map("total_count")
+  passed       Boolean?
+  xpEarned     Int @default(0) @map("xp_earned")
+  coinsEarned  Int @default(0) @map("coins_earned")
+
+  node        JourneyNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers     JourneyQuestionAnswer[]
+
+  @@index([userId])
+  @@index([nodeId])
+  @@map("journey_node_attempts")
+}
+
+model JourneyQuestionAnswer {
+  id                 String   @id @default(uuid()) @db.Uuid
+  attemptId          String   @map("attempt_id") @db.Uuid
+  enemQuestionId     String   @map("enem_question_id") @db.VarChar(64)
+  selectedAlternative String  @map("selected_alternative") @db.VarChar(1)
+  isCorrect          Boolean  @map("is_correct")
+  answeredAt         DateTime @default(now()) @map("answered_at") @db.Timestamptz(6)
+
+  attempt     JourneyNodeAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  enemQuestion EnemQuestion @relation(fields: [enemQuestionId], references: [id])
+
+  @@unique([attemptId, enemQuestionId])
+  @@index([enemQuestionId])
+  @@map("journey_question_answers")
 }
 
 model Session {
@@ -86,6 +199,9 @@ model EnemQuestion {
   correctAlternative         String   @map("correct_alternative") @db.VarChar(1)
   alternativesIntroduction   String?  @map("alternatives_introduction")
   alternatives              Json
+
+  journeyNodeQuestions       JourneyNodeQuestion[]
+  journeyAnswers             JourneyQuestionAnswer[]
 
   createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                 DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)

@@ -81,7 +81,7 @@ O módulo foi implementado em:
 Arquivos principais:
 - `enem.routes.ts`: rotas internas (`/api/enem/...`)
 - `enem.controller.ts`: validação/parse de params/query
-- `enem.service.ts`: orquestra (cache, persistência, fallback)
+- `enem.service.ts`: orquestra (cache + leitura + fallback no banco)
 - `enem.client.ts`: HTTP client com timeout + retry/backoff + tratamento de 429
 - `enem.cache.ts`: cache em memória com TTL
 - `enem.mapper.ts`: normalização para DTOs internos
@@ -114,25 +114,25 @@ Base: `/api/enem`
 - `GET /api/enem/provas`
   - Busca `GET {ENEM_API_BASE_URL}/exams`
   - Cache 1h
-  - Upsert no banco (tabela `enem_exams`)
-  - Fallback: banco local
+  - Runtime **read-only** (não persiste)
+  - Fallback: banco local (se já estiver pré-carregado)
 
 - `GET /api/enem/provas/:year`
   - Busca `GET {ENEM_API_BASE_URL}/exams/{year}`
   - Cache 1h
-  - Upsert no banco
-  - Fallback: banco local
+  - Runtime **read-only** (não persiste)
+  - Fallback: banco local (se já estiver pré-carregado)
 
 - `GET /api/enem/provas/:year/questoes?limit=&offset=&language=`
   - Busca `GET {ENEM_API_BASE_URL}/exams/{year}/questions`
   - Cache 1h por combinação (`year|limit|offset|language`)
-  - Upsert no banco (tabela `enem_questions`)
+  - Runtime **read-only** (não persiste)
   - Fallback: banco local com `skip/take` (best-effort)
 
 - `GET /api/enem/provas/:year/questoes/:index?language=`
   - Busca `GET {ENEM_API_BASE_URL}/exams/{year}/questions/{index}`
   - Cache 1h
-  - Upsert no banco
+  - Runtime **read-only** (não persiste)
   - Fallback: banco local (tenta com language e sem language)
 
 ### Cache
@@ -162,6 +162,25 @@ Modelos adicionados em `backend/prisma/schema.prisma`:
 Chave da questão (`EnemQuestion.id`):
 - formato: `"{year}:{index}:{languageOrPt}"`
 - exemplo: `2020:42:ingles`
+
+**Importante:** no estágio atual, os endpoints `/api/enem/*` **não fazem escrita no banco**.
+A persistência é feita por um script dedicado de ingestão (pré-carga).
+
+#### Script de ingestão (pré-carga)
+
+O backend inclui o script:
+
+```bash
+cd backend
+npm run enem:sync
+```
+
+Ele:
+- baixa a lista de provas (`/exams`)
+- faz upsert em `enem_exams`
+- baixa páginas de questões por ano (`/exams/{year}/questions?limit=&offset=`)
+- repete para os idiomas disponíveis (ex.: `ingles`, `espanhol`) e também a versão default
+- faz upsert em `enem_questions`
 
 Fallback:
 - se a chamada externa falhar, o backend tenta responder do banco local
@@ -232,7 +251,8 @@ Comportamento:
 
 ## 5) Observações e próximos passos (técnicos)
 
-- A enem.dev não fornece explicação detalhada das questões. O app atualmente mostra **gabarito** ao responder.
+- A enem.dev não fornece explicação detalhada das questões.
+- No modo **Jornada de Questões**, o app evita expor **gabarito** durante a tentativa: o resultado só aparece ao **finalizar** o questionário.
 - Próxima evolução natural:
   - Persistir tentativas do usuário (acerto/erro/tempo) para gamificação e estatísticas.
   - Criar um endpoint interno tipo `POST /api/questions/:id/attempt` (separado do ENEM) para registrar desempenho.
