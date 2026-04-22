@@ -2,10 +2,22 @@ import axios, { type AxiosError, type AxiosRequestConfig } from 'axios';
 import { getAccessToken, setAccessToken, clearAccessToken } from '@/auth/tokenStore';
 import { getCookie } from '@/auth/cookies';
 
+function normalizeApiBaseUrl(value: unknown): string {
+  const raw = typeof value === 'string' ? value.trim() : '';
+  if (!raw) return '/api';
+
+  // Remove trailing slashes para evitar //auth/refresh.
+  const noTrail = raw.replace(/\/+$/, '');
+
+  // Se o usuário apontar para o host (ex.: http://localhost:8080), garantimos o sufixo /api.
+  // Se já apontar para /api (ex.: https://api.seudominio.com/api), mantemos.
+  return noTrail.endsWith('/api') ? noTrail : `${noTrail}/api`;
+}
+
 const api = axios.create({
   // Por padrão usamos caminho relativo (/api) + proxy do Vite.
   // Em produção, você pode definir VITE_API_URL (ex: https://api.seudominio.com/api).
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: normalizeApiBaseUrl(import.meta.env.VITE_API_URL),
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });

@@ -146,19 +146,27 @@ async function ensureNodeQuestions(nodeId: string) {
 }
 
 async function computeJourneyProgress(journeyId: string) {
-  const [nodes, agg] = await Promise.all([
+  const [nodes, agg, latestAttempts] = await Promise.all([
     prisma.journeyNode.findMany({ where: { journeyId }, select: { status: true } }),
     prisma.journeyNodeAttempt.aggregate({
       where: { node: { journeyId }, completedAt: { not: null } },
       _sum: { correctCount: true, totalCount: true, xpEarned: true },
+    }),
+    prisma.journeyNodeAttempt.findMany({
+      where: { node: { journeyId }, completedAt: { not: null } },
+      // Precisão por Jornada: considera a ÚLTIMA tentativa finalizada de cada card.
+      // Isso evita “punir” o aluno ao refazer um card para melhorar.
+      orderBy: [{ nodeId: "asc" }, { completedAt: "desc" }],
+      distinct: ["nodeId"],
+      select: { correctCount: true, totalCount: true },
     }),
   ]);
 
   const totalNodes = nodes.length;
   const completedNodes = nodes.filter((n) => n.status === "COMPLETED").length;
 
-  const correct = agg._sum.correctCount ?? 0;
-  const total = agg._sum.totalCount ?? 0;
+  const correct = latestAttempts.reduce((sum, a) => sum + (a.correctCount ?? 0), 0);
+  const total = latestAttempts.reduce((sum, a) => sum + (a.totalCount ?? 0), 0);
 
   return {
     totalNodes,

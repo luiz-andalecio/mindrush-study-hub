@@ -25,7 +25,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const mainItems = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
-  { title: 'Jornada', url: '/questoes', icon: FileQuestion },
+  { title: 'Jornada', url: '/jornada', icon: FileQuestion },
   { title: 'Simulados', url: '/simulados', icon: ClipboardList },
   { title: 'Redação IA', url: '/redacao', icon: PenTool },
   { title: 'Chatbot', url: '/chatbot', icon: MessageCircle },

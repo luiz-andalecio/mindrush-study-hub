@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle2, XCircle, ChevronRight, Lock, Map as MapIcon, Sparkles, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, XCircle, ChevronRight, Lock, Map as MapIcon, Sparkles, ArrowLeft, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { journeyService } from '@/services/journeyService';
 import type { FinalizeNodeResponse, Journey, JourneyNodeDetails, JourneyQuestionPublic, JourneyQuestionWithAnswer } from '@/types';
@@ -18,6 +18,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 export default function Questions() {
   type Area = 'Linguagens' | 'Ciências Humanas' | 'Ciências da Natureza' | 'Matemática';
@@ -92,8 +100,7 @@ export default function Questions() {
         setError(message);
         setMode('select');
       } finally {
-        if (!mounted) return;
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     }
 
@@ -101,7 +108,6 @@ export default function Questions() {
     return () => {
       mounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const activeNode = useMemo(() => {
@@ -359,7 +365,44 @@ export default function Questions() {
                 </h2>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Cards concluídos: {journey.progress.completedNodes}/{journey.progress.totalNodes} • Precisão: {Math.round(journey.progress.accuracy * 100)}%
+                Cards concluídos: {journey.progress.completedNodes}/{journey.progress.totalNodes} •{' '}
+                <span className="inline-flex items-center gap-1">
+                  Precisão: {Math.round((journey.progress.accuracy ?? 0) * 100)}%
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        aria-label="Como calculamos a precisão?"
+                      >
+                        <HelpCircle className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Como a precisão é calculada?</DialogTitle>
+                        <DialogDescription>
+                          A precisão representa sua taxa de acertos na Jornada.
+                        </DialogDescription>
+                      </DialogHeader>
+
+                      <div className="space-y-3 text-sm">
+                        <p>
+                          Usamos a fórmula: <strong>precisão = acertos / questões respondidas</strong>.
+                        </p>
+                        <p>
+                          Para não “punir” quem refaz um card para melhorar, consideramos <strong>apenas a última tentativa finalizada de cada card</strong>.
+                          Depois somamos os acertos e o total de questões dessas últimas tentativas.
+                        </p>
+                        <p className="text-muted-foreground">
+                          Exemplo: se no Card 1 você fez 4/5 e no Card 2 fez 3/5 (na última tentativa de cada um), a precisão será (4+3)/(5+5) = 70%.
+                        </p>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </span>
               </p>
             </div>
             <Button

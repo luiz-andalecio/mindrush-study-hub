@@ -40,7 +40,7 @@ const App = () => (
             {/* App routes (with sidebar layout) */}
             <Route element={<MainLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/questoes" element={<Questions />} />
+              <Route path="/jornada" element={<Questions />} />
               <Route path="/simulados" element={<Simulados />} />
               <Route path="/redacao" element={<Essay />} />
               <Route path="/chatbot" element={<Chatbot />} />

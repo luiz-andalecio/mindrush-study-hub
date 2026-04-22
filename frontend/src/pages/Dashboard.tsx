@@ -115,7 +115,7 @@ export default function Dashboard() {
           <QuickAccessCard title="Redação IA" description="Escreva e receba feedback" icon={<PenTool className="w-6 h-6 text-primary-foreground" />} to="/redacao" gradient="gradient-warm" />
           <QuickAccessCard title="Chatbot" description="Tire suas dúvidas" icon={<MessageCircle className="w-6 h-6 text-primary-foreground" />} to="/chatbot" gradient="gradient-success" />
           <QuickAccessCard title="PvP" description="Desafie outros estudantes" icon={<Swords className="w-6 h-6 text-primary-foreground" />} to="/pvp" />
-          <QuickAccessCard title="Questões" description="Resolva por tema" icon={<FileQuestion className="w-6 h-6 text-primary-foreground" />} to="/questoes" gradient="gradient-accent" />
+          <QuickAccessCard title="Jornada" description="Progrida por cards" icon={<FileQuestion className="w-6 h-6 text-primary-foreground" />} to="/journey" gradient="gradient-accent" />
           <QuickAccessCard title="Estatísticas" description="Acompanhe sua evolução" icon={<BarChart3 className="w-6 h-6 text-primary-foreground" />} to="/estatisticas" gradient="gradient-success" />
           <QuickAccessCard title="Perfil" description="Gerencie sua conta" icon={<User className="w-6 h-6 text-primary-foreground" />} to="/perfil" gradient="gradient-warm" />
         </div>
