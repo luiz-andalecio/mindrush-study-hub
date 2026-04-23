@@ -74,6 +74,11 @@ export const env = {
 
   corsOrigins: csv(process.env.CORS_ORIGINS),
   databaseUrl: requireString("DATABASE_URL", buildDatabaseUrl()),
+
+  // ENEM (enem.dev)
+  // A docs usa https://api.enem.dev/v1/...
+  // Para self-hosting, você pode apontar isso para a sua instância (ex.: Vercel).
+  enemApiBaseUrl: process.env.ENEM_API_BASE_URL ?? "https://api.enem.dev/v1",
 } as const;
 
 for (const [key, secret] of Object.entries({
