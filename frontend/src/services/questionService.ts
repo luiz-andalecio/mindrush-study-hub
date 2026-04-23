@@ -1,8 +1,5 @@
-import api from './api';
-import type { Question } from '@/types';
+import { journeyService } from './journeyService';
 
-export const questionService = {
-  getQuestions: (params?: Record<string, string>) => api.get<Question[]>('/questions', { params }),
-  getQuestion: (id: string) => api.get<Question>(`/questions/${id}`),
-  submitAnswer: (questionId: string, answer: string) => api.post(`/questions/${questionId}/answer`, { answer }),
-};
+// @deprecated: o fluxo antigo "questions" foi substituído pela Jornada.
+// Mantido apenas para evitar confusão durante refactors (não usar em código novo).
+export const questionService = journeyService;

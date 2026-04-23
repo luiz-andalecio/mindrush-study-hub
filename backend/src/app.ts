@@ -15,6 +15,8 @@ import { questionsRouter } from "./routes/questions";
 import { rankingRouter } from "./routes/ranking";
 import { simuladosRouter } from "./routes/simulados";
 import { usersRouter } from "./routes/users";
+import { enemRouter } from "./modules/enem/enem.routes";
+import { journeyRouter } from "./modules/journey/journey.routes";
 
 export function createApp() {
   const app = express();
@@ -41,10 +43,12 @@ export function createApp() {
   api.use(healthRouter);
   api.use("/auth", authRouter);
   api.use("/questions", questionsRouter); // GET liberado no backend antigo
+  api.use("/enem", enemRouter);
 
   // Protegidas
   api.use(requireAuth);
   api.use("/users", usersRouter);
+  api.use("/journey", journeyRouter);
   api.use("/ranking", rankingRouter);
   api.use("/simulados", simuladosRouter);
   api.use("/essays", essaysRouter);

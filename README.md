@@ -132,8 +132,6 @@ Verifique no Linux:
 ```bash
 node -v
 npm -v
-java -version
-mvn -v
 docker -v
 docker compose version
 ```
@@ -256,6 +254,8 @@ npm run dev
 - Proteção CSRF (double submit cookie): frontend lê cookie CSRF e envia no header `x-csrf-token` para `/auth/refresh` e `/auth/logout`
 - Logout revoga sessão e limpa cookies
 - Documentação detalhada: [docs/auth.md](docs/auth.md)
+- Integração com API ENEM (enem.dev): [docs/enem-api.md](docs/enem-api.md)
+- Jornada de Questões (fluxo e endpoints): [docs/journey.md](docs/journey.md)
 
 **Endpoints principais:**
 - Health: `GET /api/health`
@@ -319,7 +319,9 @@ npm run dev
 > **Estado atual:**
 > - Backend Express + Prisma com autenticação JWT + refresh seguro, rotação, CSRF, sessões persistidas, logout seguro
 > - Frontend React com AuthContext, token só em memória, refresh automático, logout modal, integração completa
-> - Documentação do fluxo de autenticação em [docs/auth.md](docs/auth.md)
+> - Integração ENEM (enem.dev) com ingestão para Postgres via `npm run enem:sync` + fallback para o banco
+> - Jornada de Questões (Duolingo-like) com fluxo **salvar resposta → finalizar → resultados/histórico → tentar de novo**
+> - Documentação: [docs/auth.md](docs/auth.md), [docs/enem-api.md](docs/enem-api.md), [docs/journey.md](docs/journey.md)
 
 ### 1) Base do produto (MVP)
 
@@ -339,29 +341,23 @@ npm run dev
 
 ### 3) Sistema de Questões (núcleo da plataforma)
 
-- [ ] Definir a origem das questões (API/arquivo) e o formato de ingestão
-- [ ] Criar pipeline de **importação/seed** (Flyway ou job) com matérias, habilidades e tags
-- [ ] Implementar catálogo e filtros:
-  - [ ] `GET /api/subjects`
-  - [ ] `GET /api/questions` (paginação, assunto, dificuldade, ano, prova)
-  - [ ] `GET /api/questions/:id`
-- [ ] Implementar resolução:
-  - [ ] `POST /api/questions/:id/attempt` (resposta do usuário)
-  - [ ] Registrar acertos/erros, tempo, tentativa, e justificativa quando existir
-- [ ] Implementar **histórico** e revisão:
-  - [ ] `GET /api/users/me/attempts`
-  - [ ] “Caderno de erros” (questões erradas para refazer)
+- [x] Definir a origem das questões: enem.dev (runtime read-only) + banco local (Postgres) como fonte para a Jornada
+- [x] Implementar ingestão para o banco: `npm run enem:sync` (popular `enem_questions`)
+- [x] Implementar a **Jornada** e o fluxo do questionário via `/api/journey/*` (save answer → finalize → results/history → retry)
+- [ ] Evoluir o modelo de domínio (matérias/habilidades/tags) e criar seed/migrations para o catálogo
+- [ ] Decidir o futuro de `/api/questions/*` (hoje está **placeholder** para não bloquear o frontend)
 
 ### 4) Gamificação
 
-- [ ] Implementar XP/nível/coin (regras iniciais simples)
+- [x] Implementar XP/nível/coin (regras iniciais simples) — hoje é calculado no finalize da Jornada (XP por acerto + coins ao concluir)
 - [ ] Conquistas e badges (ex.: streak, matérias concluídas, PvP wins)
 - [ ] Missões diárias e desafios semanais (modelo + agendamento)
 - [ ] Loja/personalização (itens cosméticos, títulos, molduras, etc.)
 
 ### 5) Ranking e Ligas
 
-- [ ] Ranking global e por período (semanal/mensal)
+- [x] Ranking global simples (Top 20 por XP) em `/api/ranking`
+- [ ] Ranking por período (semanal/mensal)
 - [ ] Sistema de ligas (bronze/prata/ouro) com promoção/rebaixamento
 - [ ] Ranking entre amigos (quando o social estiver pronto)
 
@@ -380,9 +376,23 @@ npm run dev
 
 ### 8) Simulados + TRI
 
-- [ ] Criar o módulo de simulados (criação, execução, resultado)
-- [ ] Implementar cálculo **estimado** (começar simples) e evoluir para aproximação TRI
-- [ ] Histórico de simulados e comparativo por área
+- [x] Criar o módulo de simulados (ENEM 2009–2023): listagem por ano montada a partir das questões no banco, execução com timer, salvar respostas e correção
+- [ ] Implementar cálculo **estimado** e evoluir para aproximação TRI
+- [ ] Histórico avançado e comparativo por área
+
+**Fluxo (API):**
+
+- Listar simulados disponíveis por ano: `GET /api/simulados`
+- Iniciar simulado do ano: `POST /api/simulados/:year/start`
+- Retomar tentativa em andamento: `GET /api/simulados/:attemptId`
+- Salvar resposta de uma questão: `POST /api/simulados/:attemptId/answer`
+- Finalizar e corrigir: `POST /api/simulados/:attemptId/submit`
+- Ver resultado corrigido: `GET /api/simulados/:attemptId/result`
+
+**Observação (banco):**
+
+- Os simulados usam as questões já ingeridas em `enem_questions`.
+- Depois de atualizar o schema, rode `cd backend && npm run prisma:generate && npm run prisma:push`.
 
 ### 9) Estatísticas e análise de desempenho
 
@@ -392,9 +402,10 @@ npm run dev
 
 ### 10) IA (chatbot e redação)
 
-- [ ] Chatbot educacional: integração inicial e guardrails (limites, contexto, custo)
-- [ ] Avaliador de redação: pipeline (upload/texto, rubric ENEM, feedback)
-- [ ] Histórico de interações e opt-in de dados (privacidade)
+- [x] Chatbot MVP (echo) + histórico em memória (para não bloquear o frontend)
+- [x] Redações MVP (submeter/listar/detalhar) em memória (para não bloquear o frontend)
+- [ ] Integrar IA real + guardrails (limites, contexto, custo)
+- [ ] Persistir histórico/redações no banco + opt-in de dados (privacidade)
 
 ### 11) Planos pagos e feature gating
 
@@ -418,7 +429,10 @@ npm run dev
 
 ### 14) Documentação e UX
 
-- [ ] Documentar endpoints (OpenAPI/Swagger) e exemplos de requisição
+- [x] Documentar auth (JWT + refresh + CSRF): [docs/auth.md](docs/auth.md)
+- [x] Documentar ENEM (ingestão + fallback): [docs/enem-api.md](docs/enem-api.md)
+- [x] Documentar Jornada (fluxo + endpoints): [docs/journey.md](docs/journey.md)
+- [ ] Documentar endpoints restantes (OpenAPI/Swagger) e exemplos de requisição
 - [ ] FAQ/Central de ajuda dentro do app
 - [ ] Revisar responsividade, acessibilidade e microcopy (mensagens/erros)
 
