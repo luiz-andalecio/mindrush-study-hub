@@ -24,7 +24,84 @@ model User {
   journeys Journey[]
   journeyAttempts JourneyNodeAttempt[]
 
+  simuladoAttempts SimuladoAttempt[]
+
   @@map("users")
+}
+
+enum SimuladoAttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum SimuladoExamPart {
+  DAY1
+  DAY2
+}
+
+// Simulados ENEM (prova completa por ano)
+// As questões são snapshotadas por tentativa para manter ordem/consistência.
+model SimuladoAttempt {
+  id              String                @id @default(uuid()) @db.Uuid
+  userId          String                @map("user_id") @db.Uuid
+  year            Int
+  part            SimuladoExamPart       @default(DAY1)
+
+  // Para DAY1: escolha de idioma nas questões de língua estrangeira.
+  languageChoice  String?               @map("language_choice") @db.VarChar(30)
+
+  timeLimitSeconds Int                 @map("time_limit_seconds")
+  startedAt       DateTime              @default(now()) @map("started_at") @db.Timestamptz(6)
+  completedAt     DateTime?             @map("completed_at") @db.Timestamptz(6)
+  durationSeconds Int?                 @map("duration_seconds")
+  status          SimuladoAttemptStatus @default(IN_PROGRESS)
+
+  // Pausa: enquanto pausedAt != null, o timer deve ficar congelado.
+  pausedAt        DateTime?             @map("paused_at") @db.Timestamptz(6)
+  pausedSeconds   Int                   @default(0) @map("paused_seconds")
+
+  correctCount    Int                   @default(0) @map("correct_count")
+  totalCount      Int                   @default(0) @map("total_count")
+
+  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questions       SimuladoAttemptQuestion[]
+  answers         SimuladoAnswer[]
+
+  @@index([userId])
+  @@index([year])
+  @@map("simulado_attempts")
+}
+
+model SimuladoAttemptQuestion {
+  id             String          @id @default(uuid()) @db.Uuid
+  attemptId      String          @map("attempt_id") @db.Uuid
+  order          Int
+  enemQuestionId String          @map("enem_question_id") @db.VarChar(64)
+
+  attempt        SimuladoAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  enemQuestion   EnemQuestion    @relation(fields: [enemQuestionId], references: [id])
+
+  @@unique([attemptId, order])
+  @@unique([attemptId, enemQuestionId])
+  @@index([enemQuestionId])
+  @@map("simulado_attempt_questions")
+}
+
+model SimuladoAnswer {
+  id                 String          @id @default(uuid()) @db.Uuid
+  attemptId          String          @map("attempt_id") @db.Uuid
+  enemQuestionId     String          @map("enem_question_id") @db.VarChar(64)
+  selectedAlternative String         @map("selected_alternative") @db.VarChar(1)
+  isCorrect          Boolean         @map("is_correct")
+  flagged            Boolean         @default(false) @map("flagged")
+  answeredAt         DateTime        @default(now()) @map("answered_at") @db.Timestamptz(6)
+
+  attempt            SimuladoAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  enemQuestion       EnemQuestion    @relation(fields: [enemQuestionId], references: [id])
+
+  @@unique([attemptId, enemQuestionId])
+  @@index([enemQuestionId])
+  @@map("simulado_answers")
 }
 
 enum JourneyNodeStatus {
@@ -202,6 +279,9 @@ model EnemQuestion {
 
   journeyNodeQuestions       JourneyNodeQuestion[]
   journeyAnswers             JourneyQuestionAnswer[]
+
+  simuladoAttemptQuestions    SimuladoAttemptQuestion[]
+  simuladoAnswers             SimuladoAnswer[]
 
   createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                 DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)

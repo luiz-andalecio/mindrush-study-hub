@@ -457,7 +457,7 @@ export default function Questions() {
                     <Button
                       onClick={() => openNode(node.id)}
                       disabled={locked}
-                      className={cn(available ? 'gradient-primary text-primary-foreground' : '')}
+                      className={cn(available ? 'gradient-success text-primary-foreground' : '')}
                       variant={available ? 'default' : 'outline'}
                     >
                       {locked ? 'Bloqueado' : available ? 'Iniciar' : 'Ver'}
@@ -618,7 +618,7 @@ export default function Questions() {
                         className={cn(
                           'w-9 h-9 rounded-xl border text-sm font-semibold transition-all',
                           active && 'border-primary bg-primary/10',
-                          !active && answered && 'border-success/30 bg-success/10',
+                            !active && answered && 'border-primary/30 bg-primary/10',
                           !active && !answered && 'border-border/50 bg-muted/20',
                         )}
                       >

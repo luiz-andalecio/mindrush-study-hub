@@ -68,3 +68,50 @@ Observações:
 Health check:
 
 - `GET http://localhost:8080/api/health`
+
+---
+
+## Simulados ENEM (API)
+
+O backend expõe um modo de **Simulado** com persistência por **tentativa** (attempt), incluindo pausa/retomada e reinício.
+
+### Identificadores
+
+- `simuladoId`: string no formato `YYYY-d1` ou `YYYY-d2`
+	- Ex.: `2022-d1` (Dia 1: Linguagens + Humanas)
+	- Ex.: `2022-d2` (Dia 2: Natureza + Matemática)
+- `attemptId`: id da tentativa em andamento/concluída (gerado pelo backend)
+
+### Rotas
+
+- `GET /api/simulados`
+	- Lista simulados (por ano + dia), com status: `pending | in_progress | completed`.
+
+- `GET /api/simulados/history`
+	- Lista o histórico de **todas** as tentativas concluídas do usuário (inclui data/hora de início e término).
+
+- `POST /api/simulados/:simuladoId/start`
+	- Inicia uma nova tentativa.
+	- Body (opcional): `{ "languageChoice": "ingles" | "espanhol" }`
+		- Usado apenas no `d1` (língua estrangeira).
+
+- `GET /api/simulados/:attemptId`
+	- Carrega a tentativa (inclui snapshot de questões e respostas salvas).
+
+- `POST /api/simulados/:attemptId/answer`
+	- Salva uma resposta durante a prova.
+
+- `POST /api/simulados/:attemptId/pause`
+	- Pausa o timer (persiste em `pausedAt` + `pausedSeconds`).
+
+- `POST /api/simulados/:attemptId/resume`
+	- Retoma o timer (acumula tempo pausado em `pausedSeconds`).
+
+- `POST /api/simulados/:attemptId/restart`
+	- Reinicia a prova: zera respostas/flags e reinicia o timer.
+
+- `POST /api/simulados/:attemptId/submit`
+	- Finaliza e corrige.
+
+- `GET /api/simulados/:attemptId/result`
+	- Obtém o resultado corrigido.

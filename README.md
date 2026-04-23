@@ -376,9 +376,23 @@ npm run dev
 
 ### 8) Simulados + TRI
 
-- [ ] Criar o módulo de simulados (criação, execução, resultado) — hoje as rotas retornam stub/501
-- [ ] Implementar cálculo **estimado** (começar simples) e evoluir para aproximação TRI
-- [ ] Histórico de simulados e comparativo por área
+- [x] Criar o módulo de simulados (ENEM 2009–2023): listagem por ano montada a partir das questões no banco, execução com timer, salvar respostas e correção
+- [ ] Implementar cálculo **estimado** e evoluir para aproximação TRI
+- [ ] Histórico avançado e comparativo por área
+
+**Fluxo (API):**
+
+- Listar simulados disponíveis por ano: `GET /api/simulados`
+- Iniciar simulado do ano: `POST /api/simulados/:year/start`
+- Retomar tentativa em andamento: `GET /api/simulados/:attemptId`
+- Salvar resposta de uma questão: `POST /api/simulados/:attemptId/answer`
+- Finalizar e corrigir: `POST /api/simulados/:attemptId/submit`
+- Ver resultado corrigido: `GET /api/simulados/:attemptId/result`
+
+**Observação (banco):**
+
+- Os simulados usam as questões já ingeridas em `enem_questions`.
+- Depois de atualizar o schema, rode `cd backend && npm run prisma:generate && npm run prisma:push`.
 
 ### 9) Estatísticas e análise de desempenho
 
