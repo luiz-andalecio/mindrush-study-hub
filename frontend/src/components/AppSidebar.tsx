@@ -1,6 +1,6 @@
 import {
-  LayoutDashboard, FileQuestion, ClipboardList, PenTool,
-  MessageCircle, Swords, Trophy, User, BarChart3,
+  LayoutDashboard, ClipboardList, PenTool,
+  MessageCircle, MapIcon, Swords, Trophy, User, BarChart3,
   ShoppingBag, Zap, LogOut
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
@@ -25,7 +25,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const mainItems = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
-  { title: 'Jornada', url: '/jornada', icon: FileQuestion },
+  { title: 'Jornada', url: '/jornada', icon: MapIcon },
   { title: 'Simulados', url: '/simulados', icon: ClipboardList },
   { title: 'Redação IA', url: '/redacao', icon: PenTool },
   { title: 'Chatbot', url: '/chatbot', icon: MessageCircle },

@@ -1,5 +1,5 @@
 import {
-  BarChart3, ClipboardList, FileQuestion, Flame, MessageCircle,
+  BarChart3, ClipboardList, MapIcon, Flame, MessageCircle,
   PenTool, Swords, Trophy, User, TrendingUp, Target, Award
 } from 'lucide-react';
 import { StatCard } from '@/components/StatCard';
@@ -36,31 +36,31 @@ export default function Dashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Progresso Diário"
-          value="68%"
-          icon={<Target className="w-5 h-5 text-primary-foreground" />}
-          subtitle="Meta: 50 questões"
+          title="Simulados"
+          value="8"
+          icon={<ClipboardList className="w-5 h-5 text-primary-foreground" />}
+          subtitle="3 esta semana"
         />
         <StatCard
           title="Ranking"
           value="#42"
           icon={<Trophy className="w-5 h-5 text-primary-foreground" />}
           subtitle="Top 5%"
-          gradient="gradient-accent"
-        />
-        <StatCard
-          title="Simulados"
-          value="8"
-          icon={<ClipboardList className="w-5 h-5 text-primary-foreground" />}
-          subtitle="3 esta semana"
-          gradient="gradient-success"
+          gradient="gradient-warm"
         />
         <StatCard
           title="Redação"
           value="820"
           icon={<PenTool className="w-5 h-5 text-primary-foreground" />}
           subtitle="Última nota"
-          gradient="gradient-warm"
+          gradient="gradient-accent"
+        />
+        <StatCard
+          title="Progresso Diário"
+          value="68%"
+          icon={<Target className="w-5 h-5 text-primary-foreground" />}
+          subtitle="Meta: 50 questões"
+          gradient="gradient-success"
         />
       </div>
 
@@ -110,14 +110,22 @@ export default function Dashboard() {
       <div>
         <h2 className="font-display font-semibold mb-4">Acesso Rápido</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          <QuickAccessCard title="Simulados" description="Pratique com provas completas" icon={<ClipboardList className="w-6 h-6 text-primary-foreground" />} to="/simulados" />
-          <QuickAccessCard title="Ranking" description="Veja sua posição" icon={<Trophy className="w-6 h-6 text-primary-foreground" />} to="/ranking" gradient="gradient-accent" />
-          <QuickAccessCard title="Redação IA" description="Escreva e receba feedback" icon={<PenTool className="w-6 h-6 text-primary-foreground" />} to="/redacao" gradient="gradient-warm" />
-          <QuickAccessCard title="Chatbot" description="Tire suas dúvidas" icon={<MessageCircle className="w-6 h-6 text-primary-foreground" />} to="/chatbot" gradient="gradient-success" />
-          <QuickAccessCard title="PvP" description="Desafie outros estudantes" icon={<Swords className="w-6 h-6 text-primary-foreground" />} to="/pvp" />
-          <QuickAccessCard title="Jornada" description="Progrida por cards" icon={<FileQuestion className="w-6 h-6 text-primary-foreground" />} to="/journey" gradient="gradient-accent" />
+
+          <QuickAccessCard title="Jornada" description="Progrida por cards" icon={<MapIcon className="w-6 h-6 text-primary-foreground" />} to="/journey" />
+
+          <QuickAccessCard title="PvP" description="Desafie outros estudantes" icon={<Swords className="w-6 h-6 text-primary-foreground" />} to="/pvp" gradient="gradient-warm" />
+
+          <QuickAccessCard title="Chatbot" description="Tire suas dúvidas" icon={<MessageCircle className="w-6 h-6 text-primary-foreground" />} to="/chatbot" gradient="gradient-accent" />
+
           <QuickAccessCard title="Estatísticas" description="Acompanhe sua evolução" icon={<BarChart3 className="w-6 h-6 text-primary-foreground" />} to="/estatisticas" gradient="gradient-success" />
-          <QuickAccessCard title="Perfil" description="Gerencie sua conta" icon={<User className="w-6 h-6 text-primary-foreground" />} to="/perfil" gradient="gradient-warm" />
+
+          <QuickAccessCard title="Simulados" description="Pratique com provas completas" icon={<ClipboardList className="w-6 h-6 text-primary-foreground" />} to="/simulados" />
+
+          <QuickAccessCard title="Ranking" description="Veja sua posição" icon={<Trophy className="w-6 h-6 text-primary-foreground" />} to="/ranking" gradient="gradient-warm" />
+
+          <QuickAccessCard title="Redação IA" description="Escreva e receba feedback" icon={<PenTool className="w-6 h-6 text-primary-foreground" />} to="/redacao" gradient="gradient-accent" />
+
+          <QuickAccessCard title="Perfil" description="Gerencie sua conta" icon={<User className="w-6 h-6 text-primary-foreground" />} to="/perfil" gradient="gradient-success" />
         </div>
       </div>
     </div>
