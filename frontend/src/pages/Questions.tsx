@@ -5,6 +5,8 @@ import { CheckCircle2, XCircle, ChevronRight, Lock, Map as MapIcon, Sparkles, Ar
 import { cn } from '@/lib/utils';
 import { journeyService } from '@/services/journeyService';
 import type { FinalizeNodeResponse, Journey, JourneyNodeDetails, JourneyQuestionPublic, JourneyQuestionWithAnswer } from '@/types';
+import { RewardDialog } from '@/components/RewardDialog';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,6 +48,9 @@ export default function Questions() {
   const [savingAnswer, setSavingAnswer] = useState(false);
   const [localAnswers, setLocalAnswers] = useState<Record<string, string>>({});
   const [finalizeResult, setFinalizeResult] = useState<FinalizeNodeResponse | null>(null);
+  const [rewardOpen, setRewardOpen] = useState(false);
+
+  const { refreshSession } = useAuth();
 
   function Md({ value }: { value: string }) {
     return (
@@ -213,6 +218,12 @@ export default function Questions() {
       const res = await journeyService.finalizeNode(activeNodeId);
       setFinalizeResult(res.data);
 
+      await refreshSession();
+
+      if ((res.data.rewards.xpEarned ?? 0) > 0 || (res.data.rewards.coinsEarned ?? 0) > 0) {
+        setRewardOpen(true);
+      }
+
       if (journey) {
         const fresh = await journeyService.getJourney(journey.id);
         setJourney(fresh.data);
@@ -290,6 +301,14 @@ export default function Questions() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-slide-up">
+      <RewardDialog
+        open={rewardOpen}
+        onOpenChange={setRewardOpen}
+        title={finalizeResult?.attempt.passed ? 'Parabéns! Você concluiu o card' : 'Boa! Você ganhou XP'}
+        xpEarned={finalizeResult?.rewards.xpEarned ?? 0}
+        coinsEarned={finalizeResult?.rewards.coinsEarned ?? 0}
+        streak={typeof finalizeResult?.rewards.streak === 'number' ? finalizeResult?.rewards.streak : null}
+      />
       <div>
         <h1 className="text-2xl font-display font-bold">Jornada</h1>
         <p className="text-muted-foreground text-sm mt-1">Progrida por cards (5 questões) e desbloqueie níveis</p>

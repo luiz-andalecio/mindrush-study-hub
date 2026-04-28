@@ -63,6 +63,10 @@ model SimuladoAttempt {
   correctCount    Int                   @default(0) @map("correct_count")
   totalCount      Int                   @default(0) @map("total_count")
 
+  // Gamificação: recompensa desta tentativa (persistida para ranking semanal/diário e histórico)
+  xpEarned        Int                   @default(0) @map("xp_earned")
+  coinsEarned     Int                   @default(0) @map("coins_earned")
+
   user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   questions       SimuladoAttemptQuestion[]
   answers         SimuladoAnswer[]

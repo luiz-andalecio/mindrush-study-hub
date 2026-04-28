@@ -280,6 +280,10 @@ export type SimuladoResult = {
   correctCount: number;
   totalCount: number;
   score: number;
+  rewards: {
+    xpEarned: number;
+    coinsEarned: number;
+  };
   results: Array<{
     enemQuestionId: string;
     selectedAlternative: EnemAlternativeLetter | null;
@@ -288,6 +292,15 @@ export type SimuladoResult = {
     question: SimuladoQuestionWithAnswer;
   }>;
 };
+
+export interface ProfileStats {
+  questionsResolved: number;
+  simuladosCompleted: number;
+  essaysSubmitted: number | null;
+  studyHours: number | null;
+  bestStreak: number | null;
+  averageAccuracy: number; // 0..1
+}
 
 export interface EnemQuestionsMetadata {
   limit: number;

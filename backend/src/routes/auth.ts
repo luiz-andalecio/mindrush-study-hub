@@ -33,14 +33,16 @@ function toUserResponse(user: {
   coins: number;
   streak: number;
 }) {
+  const level = Math.max(1, 1 + Math.floor(Math.max(0, user.xp) / 100));
+  const xpToNextLevel = Math.max(0, level * 100 - user.xp);
   return {
     id: user.id,
     name: user.name,
     email: user.email,
     avatar: null,
-    level: user.level,
+    level,
     xp: user.xp,
-    xpToNextLevel: 100,
+    xpToNextLevel,
     coins: user.coins,
     streak: user.streak,
     rankPosition: 0,

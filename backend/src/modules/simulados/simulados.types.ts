@@ -109,6 +109,11 @@ export type SimuladoResultDto = {
   totalCount: number;
   score: number; // 0..1
 
+  rewards: {
+    xpEarned: number;
+    coinsEarned: number;
+  };
+
   results: Array<{
     enemQuestionId: string;
     selectedAlternative: string | null;

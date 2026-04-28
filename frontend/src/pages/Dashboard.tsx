@@ -6,58 +6,86 @@ import { StatCard } from '@/components/StatCard';
 import { XPBar } from '@/components/XPBar';
 import { QuickAccessCard } from '@/components/QuickAccessCard';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-
-const weeklyData = [
-  { day: 'Seg', score: 72 },
-  { day: 'Ter', score: 85 },
-  { day: 'Qua', score: 60 },
-  { day: 'Qui', score: 90 },
-  { day: 'Sex', score: 78 },
-  { day: 'Sáb', score: 65 },
-  { day: 'Dom', score: 45 },
-];
+import { useEffect, useMemo, useState } from 'react';
+import type { DashboardStats } from '@/types';
+import { userService } from '@/services/userService';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await userService.getDashboardStats();
+        if (!alive) return;
+        setStats(res.data);
+      } catch {
+        if (!alive) return;
+        setStats(null);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const xpLevel = stats?.level ?? user?.level ?? 1;
+  const xpToNext = stats?.xpToNextLevel ?? user?.xpToNextLevel ?? 100;
+  const currentInLevel = useMemo(() => Math.max(0, 100 - xpToNext), [xpToNext]);
+
+  const weeklyData = stats?.weeklyPerformance ?? [
+    { day: 'Seg', score: 0 },
+    { day: 'Ter', score: 0 },
+    { day: 'Qua', score: 0 },
+    { day: 'Qui', score: 0 },
+    { day: 'Sex', score: 0 },
+    { day: 'Sáb', score: 0 },
+    { day: 'Dom', score: 0 },
+  ];
+
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Greeting */}
       <div>
         <h1 className="text-2xl font-display font-bold">
-          Olá, <span className="text-gradient">Estudante</span> 👋
+          Olá, <span className="text-gradient">{user?.name?.split(' ')[0] || 'Estudante'}</span>
         </h1>
         <p className="text-muted-foreground text-sm mt-1">Continue sua jornada de estudos!</p>
       </div>
 
       {/* XP Bar */}
       <div className="rounded-xl p-5 gradient-card border border-border/50 shadow-card">
-        <XPBar current={2750} max={4000} level={12} />
+        <XPBar current={currentInLevel} max={100} level={xpLevel} />
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Simulados"
-          value="8"
+          value={String(stats?.simuladosCompleted ?? 0)}
           icon={<ClipboardList className="w-5 h-5 text-primary-foreground" />}
-          subtitle="3 esta semana"
+          subtitle="Concluídos"
         />
         <StatCard
           title="Ranking"
-          value="#42"
+          value={`#${stats?.rankPosition ?? user?.rankPosition ?? 0}`}
           icon={<Trophy className="w-5 h-5 text-primary-foreground" />}
-          subtitle="Top 5%"
+          subtitle="Mundial"
           gradient="gradient-warm"
         />
         <StatCard
           title="Redação"
-          value="820"
+          value={String(stats?.essayScore ?? 0)}
           icon={<PenTool className="w-5 h-5 text-primary-foreground" />}
           subtitle="Última nota"
           gradient="gradient-accent"
         />
         <StatCard
           title="Progresso Diário"
-          value="68%"
+          value={`${stats?.dailyProgress ?? 0}%`}
           icon={<Target className="w-5 h-5 text-primary-foreground" />}
           subtitle="Meta: 50 questões"
           gradient="gradient-success"
@@ -94,7 +122,7 @@ export default function Dashboard() {
           <div className="w-16 h-16 rounded-full gradient-warm flex items-center justify-center mb-3 animate-pulse-glow">
             <Flame className="w-8 h-8 text-primary-foreground" />
           </div>
-          <p className="text-3xl font-display font-bold">7 dias</p>
+          <p className="text-3xl font-display font-bold">{stats?.streak ?? user?.streak ?? 0} dias</p>
           <p className="text-muted-foreground text-sm mt-1">Sequência de Estudos</p>
           <div className="flex gap-1 mt-3">
             {[1, 2, 3, 4, 5, 6, 7].map((d) => (

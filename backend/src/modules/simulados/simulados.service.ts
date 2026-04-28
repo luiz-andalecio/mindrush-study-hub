@@ -744,16 +744,46 @@ export const simuladosService = {
     const correctCount = attempt.answers.filter((a) => a.isCorrect).length;
     const totalCount = attempt.totalCount;
 
-    const updated = await prisma.simuladoAttempt.update({
-      where: { id: attemptId },
-      data: {
-        status: "COMPLETED",
-        completedAt: now,
-        durationSeconds,
-        correctCount,
-        totalCount,
-      },
-      select: { startedAt: true, completedAt: true },
+    const score = totalCount > 0 ? correctCount / totalCount : 0;
+
+    // Gamificação (valores iniciais / MVP):
+    // - XP proporcional aos acertos
+    // - Moedas por concluir + bônus proporcional ao desempenho
+    const xpEarned = correctCount * 2;
+    const coinsEarned = 20 + Math.floor(score * 30);
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const attemptRow = await tx.simuladoAttempt.update({
+        where: { id: attemptId },
+        data: {
+          status: "COMPLETED",
+          completedAt: now,
+          durationSeconds,
+          correctCount,
+          totalCount,
+          xpEarned,
+          coinsEarned,
+        },
+        select: { startedAt: true, completedAt: true },
+      });
+
+      const user = await tx.user.findUnique({ where: { id: userId } });
+      if (!user) throw new ApiError(404, "Usuário não encontrado.");
+
+      const nextXp = user.xp + xpEarned;
+      const nextCoins = user.coins + coinsEarned;
+      const nextLevel = Math.max(1, 1 + Math.floor(nextXp / 100));
+
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          xp: nextXp,
+          coins: nextCoins,
+          level: nextLevel,
+        },
+      });
+
+      return attemptRow;
     });
 
     const answerMap = new Map(attempt.answers.map((a) => [a.enemQuestionId, a] as const));
@@ -774,8 +804,6 @@ export const simuladosService = {
       };
     });
 
-    const score = totalCount > 0 ? correctCount / totalCount : 0;
-
     return {
       attemptId,
       year: attempt.year,
@@ -786,6 +814,10 @@ export const simuladosService = {
       correctCount,
       totalCount,
       score,
+      rewards: {
+        xpEarned,
+        coinsEarned,
+      },
       results,
     };
   },
@@ -851,6 +883,10 @@ export const simuladosService = {
       correctCount: attempt.correctCount,
       totalCount: attempt.totalCount,
       score,
+      rewards: {
+        xpEarned: attempt.xpEarned ?? 0,
+        coinsEarned: attempt.coinsEarned ?? 0,
+      },
       results,
     };
   },

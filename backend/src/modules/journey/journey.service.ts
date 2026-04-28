@@ -632,15 +632,21 @@ export const journeyService = {
       const nextCoins = user.coins + coinsEarned;
       const nextLevel = Math.max(1, 1 + Math.floor(nextXp / 100));
 
+      // Streak só conta quando o usuário conclui e é aprovado.
       let nextStreak = user.streak;
-      if (!user.lastStreakAt) {
-        nextStreak = 1;
-      } else if (isSameLocalDay(user.lastStreakAt, now)) {
-        nextStreak = user.streak;
-      } else if (isYesterdayLocalDay(user.lastStreakAt, now)) {
-        nextStreak = user.streak + 1;
-      } else {
-        nextStreak = 1;
+      let shouldUpdateStreak = false;
+
+      if (passed) {
+        shouldUpdateStreak = true;
+        if (!user.lastStreakAt) {
+          nextStreak = 1;
+        } else if (isSameLocalDay(user.lastStreakAt, now)) {
+          nextStreak = user.streak;
+        } else if (isYesterdayLocalDay(user.lastStreakAt, now)) {
+          nextStreak = user.streak + 1;
+        } else {
+          nextStreak = 1;
+        }
       }
 
       await tx.user.update({
@@ -649,8 +655,7 @@ export const journeyService = {
           xp: nextXp,
           coins: nextCoins,
           level: nextLevel,
-          streak: nextStreak,
-          lastStreakAt: now,
+          ...(shouldUpdateStreak ? { streak: nextStreak, lastStreakAt: now } : {}),
         },
       });
 
