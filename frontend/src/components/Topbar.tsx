@@ -46,14 +46,20 @@ export function Topbar() {
           <span>{(user?.coins ?? 0).toLocaleString('pt-BR')}</span>
         </div>
 
+        {/*
+        
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="w-4 h-4" />
           <span className="absolute top-1 right-1 w-2 h-2 rounded-full gradient-accent" />
-        </Button>
+        </Button
 
-        <Avatar className="w-8 h-8 border-2 border-primary/50">
-          <AvatarFallback className="gradient-primary text-xs text-primary-foreground font-bold">{initials}</AvatarFallback>
-        </Avatar>
+         */}
+        
+        <a href="/perfil" title="Perfil">
+          <Avatar className="w-8 h-8 border-2 border-primary/50">
+            <AvatarFallback className="gradient-primary text-xs text-primary-foreground font-bold">{initials}</AvatarFallback>
+          </Avatar>
+        </a>
       </div>
     </header>
   );
