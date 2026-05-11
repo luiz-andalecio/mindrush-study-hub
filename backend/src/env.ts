@@ -79,6 +79,11 @@ export const env = {
   // A docs usa https://api.enem.dev/v1/...
   // Para self-hosting, você pode apontar isso para a sua instância (ex.: Vercel).
   enemApiBaseUrl: process.env.ENEM_API_BASE_URL ?? "https://api.enem.dev/v1",
+
+  // IA: Groq (gratuito, código aberto, Llama 3.3 70B)
+  // Obrigatório para recursos de IA no backend.
+  groqApiKey: requireString("GROQ_API_KEY"),
+  groqModel: process.env.GROQ_MODEL?.trim() || "llama-3.3-70b-versatile",
 } as const;
 
 for (const [key, secret] of Object.entries({

@@ -102,12 +102,12 @@ export interface SimuladoCompletedAttemptHistoryItem {
 
 export interface Essay {
   id: string;
-  title: string;
   content: string;
   theme: string;
   score?: number;
   competencies?: number[];
   feedback?: string;
+  correction?: unknown;
   submittedAt: string;
 }
 
