@@ -325,9 +325,9 @@ npm run dev
 
 ### 1) Base do produto (MVP)
 
-- [ ] Definir o **MVP v0.1** (ex.: questões + histórico + ranking simples) e escrever critérios de aceite
-- [ ] Fechar a **modelagem do banco** (entidades e relacionamentos) e desenhar um ERD
-- [ ] Padronizar contratos da API (nomenclatura, paginação, erros, validação) e tipos compartilhados no frontend
+- [x] Definir o **MVP v0.1** (ex.: questões + histórico + ranking simples) e escrever critérios de aceite
+- [x] Fechar a **modelagem do banco** (entidades e relacionamentos) e desenhar um ERD
+- [x] Padronizar contratos da API (nomenclatura, paginação, erros, validação) e tipos compartilhados no frontend
 
 
 ### 2) Autenticação e contas
@@ -345,7 +345,6 @@ npm run dev
 - [x] Implementar ingestão para o banco: `npm run enem:sync` (popular `enem_questions`)
 - [x] Implementar a **Jornada** e o fluxo do questionário via `/api/journey/*` (save answer → finalize → results/history → retry)
 - [ ] Evoluir o modelo de domínio (matérias/habilidades/tags) e criar seed/migrations para o catálogo
-- [ ] Decidir o futuro de `/api/questions/*` (hoje está **placeholder** para não bloquear o frontend)
 
 ### 4) Gamificação
 
@@ -404,8 +403,16 @@ npm run dev
 
 - [x] Chatbot MVP (echo) + histórico em memória (para não bloquear o frontend)
 - [x] Redações MVP (submeter/listar/detalhar) em memória (para não bloquear o frontend)
-- [ ] Integrar IA real + guardrails (limites, contexto, custo)
+- [x] Integrar IA real (Groq llama-3.3-70b-versatile) com correção por competência
+- [x] Sistema de zeramento com regras claras + suporte a nota 1000
+- [x] Correção de bugs críticos: enum language mismatch, JSON parsing, contagem de linhas
+- [x] Histórico com paginação (5 redações/página), delete com confirmação, botão "Limpar tudo"
+- [x] Modal de detalhes reformulado (sem JSON display, feedback limpo, progesso por competência)
+- [x] Tooltip (?) explicativo do cálculo de linhas (100 chars = 1 linha ENEM)
+- [x] Mensagens de erro amigáveis com sugestão de contato com administradores
+- [x] Lista oficial de 26 temas ENEM (1998-2023) + gerador de tema aleatório
 - [ ] Persistir histórico/redações no banco + opt-in de dados (privacidade)
+- [ ] Melhorias futuras: feedback com citações de texto, sugestões de repertório/conectivos
 
 ### 11) Planos pagos e feature gating
 
