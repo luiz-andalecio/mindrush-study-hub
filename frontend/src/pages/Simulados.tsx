@@ -19,6 +19,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { simuladoService } from '@/services/simuladoService';
 import type { EnemAlternativeLetter, Simulado, SimuladoAttempt, SimuladoCompletedAttemptHistoryItem, SimuladoResult } from '@/types';
+import { RewardDialog } from '@/components/RewardDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 type AreaKey = 'linguagens' | 'humanas' | 'natureza' | 'matematica';
 
@@ -105,6 +107,9 @@ export default function Simulados() {
   const [attempt, setAttempt] = useState<SimuladoAttempt | null>(null);
   const [result, setResult] = useState<SimuladoResult | null>(null);
   const [resultSimuladoId, setResultSimuladoId] = useState<string | null>(null);
+  const [rewardOpen, setRewardOpen] = useState(false);
+
+  const { refreshSession } = useAuth();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [savingAnswer, setSavingAnswer] = useState(false);
 
@@ -341,6 +346,12 @@ export default function Simulados() {
       setView('result');
       setCurrentIdx(0);
       await loadList();
+
+      await refreshSession();
+
+      if ((res.data.rewards?.xpEarned ?? 0) > 0 || (res.data.rewards?.coinsEarned ?? 0) > 0) {
+        setRewardOpen(true);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Falha ao finalizar simulado';
       setError(message);
@@ -421,6 +432,14 @@ export default function Simulados() {
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+      <RewardDialog
+        open={rewardOpen}
+        onOpenChange={setRewardOpen}
+        title="Simulado finalizado!"
+        xpEarned={result?.rewards?.xpEarned ?? 0}
+        coinsEarned={result?.rewards?.coinsEarned ?? 0}
+      />
 
       {view === 'list' ? (
         <>

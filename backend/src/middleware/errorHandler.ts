@@ -23,10 +23,15 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
         requestId: req.requestId,
         status: err.status,
         message: err.message,
+        code: err.code,
       },
       "Erro de aplicação",
     );
-    return res.status(err.status).json({ message: err.message });
+    return res.status(err.status).json({
+      message: err.message,
+      ...(err.code ? { code: err.code } : {}),
+      ...(err.details !== undefined ? { details: err.details } : {}),
+    });
   }
 
   // Prisma: violação de unique (email)

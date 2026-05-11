@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { XPBar } from '@/components/XPBar';
-import { Edit, Award, Star, Zap, Trophy, Target, Flame, BookOpen, LogOut, Lock } from 'lucide-react';
+import { Edit, Award, LogOut, Lock } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,30 +21,15 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
-
-const badges = [
-  { name: 'Primeiro Login', icon: Star, color: 'gradient-warm' },
-  { name: 'Mestre em Humanas', icon: BookOpen, color: 'gradient-primary' },
-  { name: 'Sequência de 7', icon: Flame, color: 'gradient-accent' },
-  { name: '100 Questões', icon: Target, color: 'gradient-success' },
-  { name: 'Top 10 Ranking', icon: Trophy, color: 'gradient-primary' },
-  { name: 'Redação 800+', icon: Zap, color: 'gradient-warm' },
-];
-
-const stats = [
-  { label: 'Questões resolvidas', value: '1.247' },
-  { label: 'Simulados feitos', value: '18' },
-  { label: 'Redações enviadas', value: '12' },
-  { label: 'Horas de estudo', value: '156h' },
-  { label: 'Maior sequência', value: '14 dias' },
-  { label: 'Acurácia média', value: '72%' },
-];
+import { userService } from '@/services/userService';
+import type { ProfileStats } from '@/types';
 
 export default function Profile() {
   const { user, logout, updateProfile } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [profileStats, setProfileStats] = useState<ProfileStats | null>(null);
 
   const initials = useMemo(
     () =>
@@ -61,6 +46,38 @@ export default function Profile() {
     if (!editOpen) return;
     setName(user?.name ?? '');
   }, [editOpen, user?.name]);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await userService.getProfileStats();
+        if (!alive) return;
+        setProfileStats(res.data);
+      } catch {
+        if (!alive) return;
+        setProfileStats(null);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const xpToNext = user?.xpToNextLevel ?? 100;
+  const currentInLevel = Math.max(0, 100 - xpToNext);
+
+  const stats = useMemo(() => {
+    const accuracy = profileStats ? Math.round((profileStats.averageAccuracy ?? 0) * 100) : null;
+    return [
+      { label: 'Questões resolvidas', value: profileStats ? profileStats.questionsResolved.toLocaleString('pt-BR') : '—' },
+      { label: 'Simulados feitos', value: profileStats ? String(profileStats.simuladosCompleted) : '—' },
+      { label: 'Redações enviadas', value: profileStats?.essaysSubmitted == null ? '—' : String(profileStats.essaysSubmitted) },
+      { label: 'Horas de estudo', value: profileStats?.studyHours == null ? '—' : `${profileStats.studyHours}h` },
+      { label: 'Maior sequência', value: profileStats?.bestStreak == null ? '—' : `${profileStats.bestStreak} dias` },
+      { label: 'Acurácia média', value: accuracy == null ? '—' : `${accuracy}%` },
+    ];
+  }, [profileStats]);
 
   async function handleSaveProfile() {
     const trimmed = name.trim();
@@ -201,7 +218,7 @@ export default function Profile() {
               </div>
             </div>
             <div className="mt-4">
-              <XPBar current={2750} max={4000} level={12} />
+              <XPBar current={currentInLevel} max={100} level={user?.level ?? 1} />
             </div>
           </div>
         </div>
@@ -212,16 +229,20 @@ export default function Profile() {
         <h2 className="font-display font-semibold mb-4 flex items-center gap-2">
           <Award className="w-5 h-5 text-primary" /> Conquistas
         </h2>
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-          {badges.map((badge) => (
-            <div key={badge.name} className="text-center">
-              <div className={`w-12 h-12 rounded-xl ${badge.color} flex items-center justify-center mx-auto`}>
-                <badge.icon className="w-6 h-6 text-primary-foreground" />
+        {(user?.badges?.length ?? 0) === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhuma conquista ainda. Continue estudando para desbloquear!</p>
+        ) : (
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+            {(user?.badges ?? []).map((badge) => (
+              <div key={badge.id} className="text-center">
+                <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center mx-auto">
+                  <span className="text-xs font-bold text-primary-foreground">{badge.name.slice(0, 2).toUpperCase()}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">{badge.name}</p>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">{badge.name}</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Statistics */}
