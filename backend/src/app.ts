@@ -15,6 +15,7 @@ import { questionsRouter } from "./routes/questions";
 import { rankingRouter } from "./routes/ranking";
 import { simuladosRouter } from "./routes/simulados";
 import { usersRouter } from "./routes/users";
+import statsRouter from "./routes/stats";
 import { enemRouter } from "./modules/enem/enem.routes";
 import { journeyRouter } from "./modules/journey/journey.routes";
 
@@ -48,6 +49,7 @@ export function createApp() {
   // Protegidas
   api.use(requireAuth);
   api.use("/users", usersRouter);
+  api.use("/stats", statsRouter);
   api.use("/journey", journeyRouter);
   api.use("/ranking", rankingRouter);
   api.use("/simulados", simuladosRouter);
