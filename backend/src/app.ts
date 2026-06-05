@@ -12,6 +12,7 @@ import { chatbotRouter } from "./routes/chatbot";
 import { essaysRouter } from "./routes/essays";
 import { healthRouter } from "./routes/health";
 import { questionsRouter } from "./routes/questions";
+import { essayStatsRouter } from "./routes/essayStats";
 import { rankingRouter } from "./routes/ranking";
 import { simuladosRouter } from "./routes/simulados";
 import { usersRouter } from "./routes/users";
@@ -54,6 +55,7 @@ export function createApp() {
   api.use("/ranking", rankingRouter);
   api.use("/simulados", simuladosRouter);
   api.use("/essays", essaysRouter);
+    api.use("/essay-stats", essayStatsRouter);
   api.use("/chatbot", chatbotRouter);
 
   app.use("/api", api);

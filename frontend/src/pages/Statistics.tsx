@@ -2,6 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatisticsOverview } from '@/components/StatisticsOverview';
 import { WeaknessAnalytics } from '@/components/WeaknessAnalytics';
 import { BadgesShowcase } from '@/components/BadgesShowcase';
+import { EssayAnalysisTab } from '@/components/EssayAnalysisTab';
 import { BarChart, TrendingUp, Trophy } from 'lucide-react';
 
 /**
@@ -26,7 +27,7 @@ export default function Statistics() {
 
       {/* Tabs principais */}
       <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="grid w-max grid-cols-3">
+        <TabsList className="grid w-max grid-cols-4">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <BarChart className="w-4 h-4" />
             <span className="hidden sm:inline">Dashboard</span>
@@ -34,6 +35,10 @@ export default function Statistics() {
           <TabsTrigger value="analysis" className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4" />
             <span className="hidden sm:inline">Análises</span>
+          </TabsTrigger>
+          <TabsTrigger value="essays" className="flex items-center gap-2">
+            <span>✍️</span>
+            <span className="hidden sm:inline">Redações</span>
           </TabsTrigger>
           <TabsTrigger value="badges" className="flex items-center gap-2">
             <Trophy className="w-4 h-4" />
@@ -49,6 +54,11 @@ export default function Statistics() {
         {/* Análises Avançadas + Fraquezas */}
         <TabsContent value="analysis" className="space-y-6 mt-6">
           <WeaknessAnalytics />
+        </TabsContent>
+
+        {/* Análise de Redação ENEM */}
+        <TabsContent value="essays" className="space-y-6 mt-6">
+          <EssayAnalysisTab />
         </TabsContent>
 
         {/* Badges e Conquistas */}
