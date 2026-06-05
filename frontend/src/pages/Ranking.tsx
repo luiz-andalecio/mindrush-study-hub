@@ -45,7 +45,14 @@ export default function Ranking() {
       </div>
 
       <div className="flex items-center justify-between">
-        <Tabs value={scope} onValueChange={(v) => setScope(v as any)}>
+        <Tabs
+          value={scope}
+          onValueChange={(v) => {
+            if (v === 'world' || v === 'weekly' || v === 'daily') {
+              setScope(v);
+            }
+          }}
+        >
           <TabsList>
             <TabsTrigger value="world">Mundial</TabsTrigger>
             <TabsTrigger value="weekly">Semanal</TabsTrigger>

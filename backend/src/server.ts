@@ -2,11 +2,20 @@ import { createApp } from "./app";
 import { env } from "./env";
 import { prisma } from "./db/prisma";
 import { logger } from "./logger";
+import { initializeDatabase } from "./db/initialize";
 
 const app = createApp();
 
-const server = app.listen(env.port, () => {
+// Inicia o servidor
+const server = app.listen(env.port, async () => {
   logger.info(`MindRush API (Express) em http://localhost:${env.port}/api`);
+  
+  // Sincronização automática de questões ENEM se o banco estiver vazio
+  try {
+    await initializeDatabase();
+  } catch (err) {
+    logger.error({ err }, "Falha na inicialização automática do banco");
+  }
 });
 
 server.on("error", (err: any) => {

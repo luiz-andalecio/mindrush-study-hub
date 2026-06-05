@@ -17,6 +17,12 @@ model User {
   coins        Int
   streak       Int
   lastStreakAt DateTime? @map("last_streak_at") @db.Timestamptz(6)
+  
+  // Cache de métricas gerais (atualizado periodicamente)
+  totalQuestionsAnswered Int @default(0) @map("total_questions_answered")
+  overallAccuracy Float @default(0) @map("overall_accuracy") // percentual 0-100
+  estimatedTriScore Int @default(500) @map("estimated_tri_score")
+  
   createdAt    DateTime @map("created_at") @db.Timestamptz(6)
 
   sessions Session[]
@@ -25,8 +31,207 @@ model User {
   journeyAttempts JourneyNodeAttempt[]
 
   simuladoAttempts SimuladoAttempt[]
+  
+  performanceAnalytics PerformanceAnalytic[]
+  triAnalytics TriAnalytic[]
+  weaknessAnalytics WeaknessAnalytic[]
+  badges UserBadge[]
+  achievements UserAchievement[]
+
+  // Redações ENEM
+  essays          EnemEssay[]
+  essayStats      EnemEssayStats?
+  essayHistory    EnemEssayCompetencyHistory[]
 
   @@map("users")
+}
+
+// ============================================================================
+// REDAÇÕES ENEM - MODELO COMPLETO COM ANÁLISES
+// ============================================================================
+
+// Redação ENEM submetida e corrigida
+model EnemEssay {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  
+  // Conteúdo
+  theme           String   @db.VarChar(200)    // tema da redação (ex: "Desmatamento")
+  content         String   @db.Text            // texto completo da redação
+  wordCount       Int      @map("word_count")   // total de palavras
+  lineCount       Int      @map("line_count")   // total de linhas
+  
+  // Notas e Competências
+  finalScore      Int      @default(0) @map("final_score")        // nota final (0-1000)
+  competency1     Int      @map("competency_1")   // C1: Norma culta (0-200)
+  competency2     Int      @map("competency_2")   // C2: Compreensão (0-200)
+  competency3     Int      @map("competency_3")   // C3: Argumentação (0-200)
+  competency4     Int      @map("competency_4")   // C4: Coesão (0-200)
+  competency5     Int      @map("competency_5")   // C5: Proposta intervenção (0-200)
+  
+  // Status da correção
+  correctionStatus String  @default("pending") @map("correction_status") // "pending", "corrected", "zero_rated"
+  zeroCause       String?  @map("zero_cause")    // razão do zeramento (se houver)
+  
+  // Resultado completo da IA (JSON)
+  aiCorrection    Json?    @map("ai_correction")
+  
+  // Metadados
+  submittedAt     DateTime @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  correctedAt     DateTime? @map("corrected_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analysis        EnemEssayAnalysis?
+  
+  @@index([userId])
+  @@index([submittedAt])
+  @@map("enem_essays")
+}
+
+// Análise aprofundada da redação (gerada pela IA)
+model EnemEssayAnalysis {
+  id                   String   @id @default(uuid()) @db.Uuid
+  essayId              String   @unique @map("essay_id") @db.Uuid
+  
+  // Detecção de tema
+  themeIdentified      String?  @map("theme_identified")     // tema identificado pelo modelo
+  thesiDetected        String?  @map("thesis_detected")       // tese principal identificada
+  
+  // Análise de Competência 1 (Norma Culta)
+  grammarErrors        Int      @default(0) @map("grammar_errors")        // quantidade de erros gramaticais
+  spellingErrors       Int      @default(0) @map("spelling_errors")       // erros de ortografia
+  punctuationErrors    Int      @default(0) @map("punctuation_errors")    // erros de pontuação
+  concordanceErrors    Int      @default(0) @map("concordance_errors")    // erros de concordância
+  c1Level              String   @map("c1_level")    // "muito fraco", "fraco", "regular", "bom", "excelente"
+  
+  // Análise de Competência 2 (Compreensão do Tema)
+  themeAdherence       Float    @map("theme_adherence")      // 0-100: % de aderência ao tema
+  repertoireCount      Int      @default(0) @map("repertoire_count")     // quantidade de repertórios usados
+  validRepertoires     Int      @default(0) @map("valid_repertoires")    // repertórios válidos
+  productiveRepertoires Int    @default(0) @map("productive_repertoires") // repertórios produtivos
+  c2Level              String   @map("c2_level")
+  
+  // Análise de Competência 3 (Argumentação)
+  argumentCount        Int      @default(0) @map("argument_count")       // quantidade de argumentos
+  argumentDepth        String   @map("argument_depth")       // "superficial", "média", "profunda"
+  logicalProgression   Float    @map("logical_progression")  // 0-100: coerência lógica
+  criticality          Float    @map("criticality")          // 0-100: senso crítico
+  c3Level              String   @map("c3_level")
+  
+  // Análise de Competência 4 (Coesão)
+  connectorCount       Int      @default(0) @map("connector_count")      // quantidade de conectivos
+  connectorVariety     Float    @map("connector_variety")    // 0-100: variedade de conectivos
+  textualFlow          Float    @map("textual_flow")         // 0-100: fluidez do texto
+  paragraphStructure   String   @map("paragraph_structure")  // "deficiente", "adequada", "excelente"
+  c4Level              String   @map("c4_level")
+  
+  // Análise de Competência 5 (Proposta de Intervenção)
+  hasAgent             Boolean  @default(false) @map("has_agent")        // possui agente?
+  hasAction            Boolean  @default(false) @map("has_action")       // possui ação clara?
+  hasMeans             Boolean  @default(false) @map("has_means")        // possui meio/modo?
+  hasEffect            Boolean  @default(false) @map("has_effect")       // possui efeito?
+  hasDetails           Boolean  @default(false) @map("has_details")      // possui detalhamento?
+  interventionViability String  @map("intervention_viability")  // "inviável", "pouco viável", "viável", "muito viável"
+  c5Level              String   @map("c5_level")
+  
+  // Análise IA avançada
+  writingStyle         String   @map("writing_style")       // "formal", "semiformal", "informal"
+  stylisticProfile     String   @map("stylistic_profile")   // "argumentador", "crítico", "analítico", etc
+  lexicalRichness      Float    @map("lexical_richness")    // 0-100: riqueza vocabular
+  textualComplexity    Float    @map("textual_complexity")  // 0-100: complexidade sintática
+  coherenceScore       Float    @map("coherence_score")     // 0-100: coerência geral
+  
+  // Pontos fortes e fracos
+  strengths            String[] @default([])  // array com pontos fortes
+  weaknesses           String[] @default([])  // array com pontos fracos
+  improvements         String[] @default([])  // array com sugestões de melhoria
+  
+  // Benchmark comparativo
+  nationalAvgDistance  Float    @map("national_avg_distance")  // distância para média nacional (em pontos)
+  percentileRank       Float    @map("percentile_rank")        // 0-100: percentil do usuário
+  
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  
+  essay                EnemEssay @relation(fields: [essayId], references: [id], onDelete: Cascade)
+  
+  @@index([essayId])
+  @@map("enem_essay_analyses")
+}
+
+// Estatísticas agregadas do usuário em redações
+model EnemEssayStats {
+  id                      String   @id @default(uuid()) @db.Uuid
+  userId                  String   @unique @map("user_id") @db.Uuid
+  
+  // Contadores
+  totalEssays             Int      @default(0) @map("total_essays")
+  zeroRatedEssays        Int      @default(0) @map("zero_rated_essays")
+  
+  // Médias
+  averageScore            Float    @default(0) @map("average_score")
+  bestScore               Int      @default(0) @map("best_score")
+  worstScore              Int      @default(0) @map("worst_score")
+  medianScore             Float    @default(0) @map("median_score")
+  
+  // Competências (médias)
+  avgCompetency1          Float    @default(0) @map("avg_competency_1")
+  avgCompetency2          Float    @default(0) @map("avg_competency_2")
+  avgCompetency3          Float    @default(0) @map("avg_competency_3")
+  avgCompetency4          Float    @default(0) @map("avg_competency_4")
+  avgCompetency5          Float    @default(0) @map("avg_competency_5")
+  
+  // Evolução
+  evolutionPercentage     Float    @default(0) @map("evolution_percentage")  // % melhora últimas 5
+  tendencyDirection       String   @default("stable") @map("tendency_direction") // "improving", "stable", "declining"
+  
+  // Frequência
+  essaysPerWeek           Float    @default(0) @map("essays_per_week")
+  lastEssayDate           DateTime? @map("last_essay_date") @db.Timestamptz(6)
+  
+  // Consistência
+  consistencyScore        Float    @default(0) @map("consistency_score")  // 0-100: quanto varia a nota
+  
+  // Fraquezas por competência
+  weakestCompetency       Int      @map("weakest_competency")    // 1-5: competência mais fraca
+  strongestCompetency     Int      @map("strongest_competency")  // 1-5: competência mais forte
+  
+  updatedAt               DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("enem_essay_stats")
+}
+
+// Histórico de progressão de competências (snapshots periódicos)
+model EnemEssayCompetencyHistory {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  
+  // Período de agregação
+  period            String   @db.VarChar(20) // "weekly", "monthly"
+  startDate         DateTime @map("start_date") @db.Timestamptz(6)
+  endDate           DateTime @map("end_date") @db.Timestamptz(6)
+  
+  // Médias do período
+  avgScore          Float
+  c1Avg             Float @map("c1_avg")
+  c2Avg             Float @map("c2_avg")
+  c3Avg             Float @map("c3_avg")
+  c4Avg             Float @map("c4_avg")
+  c5Avg             Float @map("c5_avg")
+  
+  // Tendência
+  trend             String @db.VarChar(20) // "up", "down", "stable"
+  essayCount        Int @map("essay_count")
+  
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, period, startDate])
+  @@index([userId])
+  @@map("enem_essay_competency_histories")
 }
 
 enum SimuladoAttemptStatus {
@@ -293,4 +498,257 @@ model EnemQuestion {
   @@index([year, index])
   @@index([year, language])
   @@map("enem_questions")
+}
+
+// ============================================================================
+// ESTATÍSTICAS E ANÁLISES
+// ============================================================================
+
+// Calibração de dificuldade das questões para cálculo de TRI
+// Permite usar dados reais do ENEM para melhorar estimativas
+model QuestionDifficulty {
+  id                  String   @id @default(uuid()) @db.Uuid
+  enemQuestionId      String   @unique @map("enem_question_id") @db.VarChar(64)
+  
+  // TRI parâmetros (modelo 3PL)
+  discrimination      Float    @default(1.0) // parâmetro 'a' - discriminação
+  difficulty          Float    @default(0.5) // parâmetro 'b' - dificuldade (-∞ a ∞)
+  guessing            Float    @default(0.2) // parâmetro 'c' - probabilidade de acerto casual
+  
+  // Estatísticas empíricas
+  averageAccuracy     Float    @default(0.5) @map("average_accuracy") // % acertos no ENEM
+  estimatedIrfValue   Float?   @map("estimated_irf_value") // valor IRF estimado
+
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([enemQuestionId])
+  @@map("question_difficulties")
+}
+
+// Cálculos de proficiência e nota TRI por tentativa
+model TriAnalytic {
+  id                  String   @id @default(uuid()) @db.Uuid
+  userId              String   @map("user_id") @db.Uuid
+  
+  // Contexto da medição
+  source              String   @db.VarChar(30) // "simulado" ou "journey"
+  sourceId            String   @map("source_id") @db.Uuid // ID do SimuladoAttempt ou JourneyNodeAttempt
+  
+  // Resultados TRI
+  proficiency         Float    // proficiência θ estimada (-3 a 3)
+  estimatedTriScore   Int      // nota TRI estimada (0-1000)
+  
+  // Por área
+  linguagensScore     Int?
+  humanasScore        Int?
+  naturezaScore       Int?
+  matematicaScore     Int?
+  redacaoScore        Int?
+  
+  // Análise de coerência
+  pedagogicalCoherence Float    @map("pedagogical_coherence") // 0-100: % de coerência
+  incoherenceLevel    String?   @map("incoherence_level") // "none", "low", "medium", "high"
+  
+  // Estatísticas da tentativa
+  correctCount        Int       @map("correct_count")
+  totalCount          Int       @map("total_count")
+  accuracy            Float     // percentual de acertos
+  
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([sourceId])
+  @@map("tri_analytics")
+}
+
+// Análise geral de desempenho por período
+model PerformanceAnalytic {
+  id                    String   @id @default(uuid()) @db.Uuid
+  userId                String   @map("user_id") @db.Uuid
+  
+  // Período
+  period                String   @db.VarChar(20) // "daily", "weekly", "monthly", "all_time"
+  startDate             DateTime @map("start_date") @db.Timestamptz(6)
+  endDate               DateTime @map("end_date") @db.Timestamptz(6)
+  
+  // Métricas gerais
+  questionsAnswered     Int      @map("questions_answered")
+  correctAnswers        Int      @map("correct_answers")
+  overallAccuracy       Float    // percentual
+  averageTimePerQuestion Float   @map("average_time_per_question") // segundos
+  
+  // Evolução
+  weeklyEvolution       Float?   @map("weekly_evolution") // % de melhora
+  monthlyEvolution      Float?   @map("monthly_evolution")
+  
+  // Estudos
+  studyDays             Int      @map("study_days")
+  currentStreak         Int      @map("current_streak")
+  maxStreak             Int      @map("max_streak")
+  frequencyPerWeek      Float    @map("frequency_per_week")
+  
+  // Simulados
+  simuladoCount         Int      @default(0) @map("simulado_count")
+  averageSimuladoScore  Float?   @map("average_simulado_score")
+  abandonmentRate       Float?   @map("abandonment_rate")
+  
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, period, startDate, endDate])
+  @@index([userId])
+  @@map("performance_analytics")
+}
+
+// Desempenho por área do ENEM
+model AreaPerformance {
+  id                      String   @id @default(uuid()) @db.Uuid
+  userId                  String   @map("user_id") @db.Uuid
+  
+  // Área
+  area                    String   @db.VarChar(50) // "Linguagens", "Humanas", "Natureza", "Matemática", "Redação"
+  
+  // Período
+  period                  String   @db.VarChar(20) @default("all_time")
+  startDate               DateTime @map("start_date") @db.Timestamptz(6)
+  
+  // Desempenho
+  accuracy                Float    // percentual de acertos
+  correctCount            Int      @map("correct_count")
+  totalCount              Int      @map("total_count")
+  estimatedTriScore       Int      @map("estimated_tri_score")
+  
+  // Análise de dificuldade
+  easyAccuracy            Float?   @map("easy_accuracy")
+  mediumAccuracy          Float?   @map("medium_accuracy")
+  hardAccuracy            Float?   @map("hard_accuracy")
+  averageDifficultyLevel  Float?   @map("average_difficulty_level")
+  
+  // Tempo
+  averageTimePerQuestion  Float    @map("average_time_per_question")
+  
+  // Histórico
+  previousAccuracy        Float?   @map("previous_accuracy") // para calcular evolução
+  evolutionPercentage     Float?   @map("evolution_percentage")
+  
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  
+  @@unique([userId, area, period, startDate])
+  @@index([userId, area])
+  @@map("area_performance")
+}
+
+// Análise de fraquezas: tópicos e competências com baixo desempenho
+model WeaknessAnalytic {
+  id                  String   @id @default(uuid()) @db.Uuid
+  userId              String   @map("user_id") @db.Uuid
+  
+  // Contexto
+  area                String   @db.VarChar(50) // "Linguagens", "Humanas", etc
+  topic               String   @db.VarChar(100) // "Funções", "Ecologia", "Geometria", etc
+  competence          String?  @db.VarChar(150) // competência específica (opcional)
+  
+  // Métricas
+  accuracy            Float    // percentual de acertos neste tópico
+  correctCount        Int      @map("correct_count")
+  totalCount          Int      @map("total_count")
+  
+  // Severidade da fraqueza
+  severity            String   @db.VarChar(20) // "critical", "high", "medium", "low"
+  improvementPotential Float   @map("improvement_potential") // 0-100: quanto pode melhorar
+  
+  // Histórico
+  previousAccuracy    Float?   @map("previous_accuracy")
+  trend               String?  @db.VarChar(20) // "improving", "stable", "declining"
+  
+  lastUpdated         DateTime @map("last_updated") @db.Timestamptz(6)
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, area, topic])
+  @@index([userId, severity])
+  @@map("weakness_analytics")
+}
+
+// Definições de badges (medalhas gamificadas)
+model Badge {
+  id                String   @id @default(uuid()) @db.Uuid
+  code              String   @unique @db.VarChar(50) // "100_questions", "90_percent_math", etc
+  name              String   @db.VarChar(100)
+  description       String   @db.Text
+  category          String   @db.VarChar(30) // "milestone", "mastery", "consistency", "speed"
+  
+  // Ícone/imagem (URL ou base64)
+  iconUrl           String?   @map("icon_url")
+  
+  // Critério de desbloqueio
+  criteria          Json     // estrutura que define como ganhar o badge
+  
+  xpReward          Int      @default(0) @map("xp_reward")
+  coinReward        Int      @default(0) @map("coin_reward")
+  
+  rarity            String   @db.VarChar(20) @default("common") // "common", "rare", "epic", "legendary"
+  
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  
+  userBadges        UserBadge[]
+  
+  @@map("badges")
+}
+
+// Registro de badges ganhos pelo usuário
+model UserBadge {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  badgeId           String   @map("badge_id") @db.Uuid
+  
+  unlockedAt        DateTime @default(now()) @map("unlocked_at") @db.Timestamptz(6)
+  
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge             Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@map("user_badges")
+}
+
+// Definições de conquistas (achievements)
+model Achievement {
+  id                String   @id @default(uuid()) @db.Uuid
+  code              String   @unique @db.VarChar(50)
+  name              String   @db.VarChar(100)
+  description       String   @db.Text
+  category          String   @db.VarChar(30) // "learning", "consistency", "competition", "exploration"
+  
+  criteria          Json
+  
+  xpReward          Int      @default(0) @map("xp_reward")
+  
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  
+  userAchievements  UserAchievement[]
+  
+  @@map("achievements")
+}
+
+// Registro de conquistas ganhas pelo usuário
+model UserAchievement {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  achievementId     String   @map("achievement_id") @db.Uuid
+  
+  completedAt       DateTime @default(now()) @map("completed_at") @db.Timestamptz(6)
+  progress          Float    @default(100) // percentual de progresso (0-100)
+  
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement       Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@map("user_achievements")
 }
